@@ -70,21 +70,54 @@ function logout() {
 }
 
 // Función para obtener información del usuario actual - CORREGIDA
+// Función para obtener información del usuario actual - CORREGIDA
 function getCurrentUser() {
     const userStr = localStorage.getItem('zahara_user');
     if (!userStr) return null;
     
     try {
-        // CORRECCIÓN: El servidor ahora envía un string JSON serializado
-        const userData = JSON.parse(userStr);
-        return userData;
+      const userData = JSON.parse(userStr);
+      // Eliminar la referencia al rol
+      delete userData.rol;
+      return userData;
     } catch (error) {
-        console.error('Error parsing user data:', error);
-        // Limpiar datos corruptos
-        localStorage.removeItem('zahara_user');
-        return null;
+      console.error('Error parsing user data:', error);
+      localStorage.removeItem('zahara_user');
+      return null;
     }
-}
+  }
+  
+  // Verificar autenticación al cargar páginas protegidas
+  document.addEventListener('DOMContentLoaded', function() {
+    // Lista de páginas protegidas (eliminar admin.html si ya no es necesaria)
+    const protectedPages = [
+      'inicio.html'
+    ];
+    
+    const currentPage = window.location.pathname.split('/').pop();
+    
+    // Si estamos en una página protegida, verificar autenticación
+    if (protectedPages.includes(currentPage)) {
+      if (!protectPage()) {
+        return; // Salir si no está autenticado
+      }
+      
+      // Mostrar información del usuario si existe elemento para ello
+      const user = getCurrentUser();
+      if (user) {
+        // Actualizar elementos de la interfaz con info del usuario
+        const userElements = document.querySelectorAll('.user-name');
+        userElements.forEach(el => {
+          el.textContent = user.nombre || user.username;
+        });
+      }
+    }
+    
+    // Si estamos en login y ya está autenticado, redirigir
+    if (currentPage === 'login.html' && isAuthenticated()) {
+      window.location.href = '/inicio.html';
+    }
+  });
 
 // Verificar autenticación al cargar páginas protegidas
 document.addEventListener('DOMContentLoaded', function() {

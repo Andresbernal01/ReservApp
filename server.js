@@ -99,7 +99,6 @@ app.post('/api/login', async (req, res) => {
         id: barbero.id, 
         username: barbero.username,
         nombre: barbero.nombre,
-        rol: barbero.nombre,
         barbero_id: barbero.id
       },
       JWT_SECRET,
@@ -114,7 +113,6 @@ app.post('/api/login', async (req, res) => {
         id: barbero.id,
         username: barbero.username,
         nombre: barbero.nombre,
-        rol: barbero.nombre,
         barbero_id: barbero.id
       })
     });
@@ -250,16 +248,8 @@ app.get('/api/appointments', verifyAuth, async (req, res) => {
         barberos!inner(id, nombre)
       `);
     
-    // Filtrar según el rol del usuario autenticado
-    if (req.user.rol === 'admin') {
-      // Admin puede ver todas las citas o filtrar por barbero específico
-      if (barbero_id && barbero_id !== 'todos') {
-        query = query.eq('barbero_id', barbero_id);
-      }
-    } else {
-      // Los barberos solo ven sus propias citas
-      query = query.eq('barbero_id', req.user.barbero_id);
-    }
+    // Todos los barberos solo ven sus propias citas
+    query = query.eq('barbero_id', req.user.barbero_id);
     
     const { data, error } = await query.order('fecha', { ascending: true }).order('hora', { ascending: true });
     
@@ -340,8 +330,8 @@ app.put('/api/appointments/:id', verifyAuth, async (req, res) => {
   const { nombre, apellido, telefono, fecha, hora, servicio, barbero_id } = req.body;
 
   try {
-    // Verificar permisos
-    if (req.user.rol !== 'admin' && req.user.barbero_id !== barbero_id) {
+    // Verificar que el barbero solo pueda editar sus propias citas
+    if (req.user.barbero_id !== barbero_id) {
       return res.status(403).json({ error: 'No tienes permisos para editar esta cita' });
     }
 
@@ -397,8 +387,8 @@ app.delete('/api/appointments/:id', verifyAuth, async (req, res) => {
       return res.status(404).json({ error: 'Cita no encontrada' });
     }
 
-    // Verificar permisos
-    if (req.user.rol !== 'admin' && req.user.barbero_id !== appointment.barbero_id) {
+    // Verificar que el barbero solo pueda eliminar sus propias citas
+    if (req.user.barbero_id !== appointment.barbero_id) {
       return res.status(403).json({ error: 'No tienes permisos para eliminar esta cita' });
     }
 

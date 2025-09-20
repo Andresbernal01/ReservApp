@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 // Reemplazar la función updateAvailableTimeSlots en script.js
+// Función updateAvailableTimeSlots modificada en script.js
 async function updateAvailableTimeSlots() {
     if (!dateInput || !barberoInput || !availableHoursList) return;
     
@@ -52,76 +53,78 @@ async function updateAvailableTimeSlots() {
     availableHoursList.innerHTML = '<li class="loading-indicator">Cargando horas disponibles...</li>';
 
     try {
-        // Primero verificar si hay horario especial para esta fecha específica
-        const specialScheduleResponse = await fetch(`/api/special-schedule?date=${selectedDate}&barbero=${selectedBarbero}`);
-        const specialSchedule = await specialScheduleResponse.json();
-
-        if (specialSchedule && specialSchedule.dia_no_laboral) {
-            availableHoursList.innerHTML = '<li>No hay atención este día.</li>';
-            if (timeInput) timeInput.disabled = false;
-            return;
+        // Obtener lista de barberos para conseguir el ID
+        const barberosResponse = await fetch('/api/barberos');
+        const barberos = await barberosResponse.json();
+        const barberoData = barberos.find(b => b.nombre === selectedBarbero);
+        
+        if (!barberoData) {
+            throw new Error('Barbero no encontrado');
         }
 
-        // Determinar horarios disponibles
-        let selectedDaySlots = [];
+        // Obtener el horario por defecto del barbero usando su ID
+        const defaultScheduleResponse = await fetch(`/api/barberos/${barberoData.id}/horario-defecto?fecha=${selectedDate}`);
         
-        // Si hay horario especial para esta fecha, usarlo
-        if (specialSchedule && (specialSchedule.horario_manana || specialSchedule.horario_tarde)) {
-            selectedDaySlots = [
-                ...(specialSchedule.horario_manana || []),
-                ...(specialSchedule.horario_tarde || [])
-            ];
-        } else {
-            // Si no hay horario especial, necesitamos obtener el ID del barbero primero
-            const barberosResponse = await fetch('/api/barberos');
-            const barberos = await barberosResponse.json();
-            const barberoData = barberos.find(b => b.nombre === selectedBarbero);
+        if (defaultScheduleResponse.ok) {
+            const defaultSchedule = await defaultScheduleResponse.json();
             
-            if (barberoData) {
-                // Obtener el horario por defecto del barbero usando su ID
-                const defaultScheduleResponse = await fetch(`/api/barberos/${barberoData.id}/horario-defecto?fecha=${selectedDate}`);
-                
-                if (defaultScheduleResponse.ok) {
-                    const defaultSchedule = await defaultScheduleResponse.json();
-                    
-                    if (defaultSchedule.dia_no_laboral) {
-                        availableHoursList.innerHTML = '<li>No hay atención este día.</li>';
-                        if (timeInput) timeInput.disabled = false;
-                        return;
-                    }
-                    
-                    selectedDaySlots = [
-                        ...(defaultSchedule.horario_manana || []),
-                        ...(defaultSchedule.horario_tarde || [])
-                    ];
-                } else {
-                    // Fallback si no se puede obtener el horario de la BD
-                    console.error('Error obteniendo horario por defecto, usando fallback');
-                    selectedDaySlots = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'];
-                }
-            } else {
-                // Fallback si no se encuentra el barbero
-                console.error('Barbero no encontrado, usando horario fallback');
-                selectedDaySlots = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'];
+            if (defaultSchedule.dia_no_laboral) {
+                availableHoursList.innerHTML = '<li>No hay atención este día.</li>';
+                if (timeInput) timeInput.disabled = false;
+                return;
             }
-        }
+            
+            let selectedDaySlots = [
+                ...(defaultSchedule.horario_manana || []),
+                ...(defaultSchedule.horario_tarde || [])
+            ];
 
-        selectedDaySlots = selectedDaySlots.map(convertToAMPM);
+            selectedDaySlots = selectedDaySlots.map(convertToAMPM);
 
-        // Usar la nueva ruta unificada con parámetro barbero
-        const response = await fetch(`/api/appointments/filter?date=${selectedDate}&barbero=${selectedBarbero}`);
-        const bookedAppointments = await response.json();
-        const bookedTimes = bookedAppointments.map(appointment => convertToAMPM(appointment.hora));
+            // Usar la nueva ruta unificada con parámetro barbero
+            const response = await fetch(`/api/appointments/filter?date=${selectedDate}&barbero=${selectedBarbero}`);
+            const bookedAppointments = await response.json();
+            const bookedTimes = bookedAppointments.map(appointment => convertToAMPM(appointment.hora));
 
-        const remainingSlots = selectedDaySlots.filter(slot => !bookedTimes.includes(slot));
+            const remainingSlots = selectedDaySlots.filter(slot => !bookedTimes.includes(slot));
 
-        availableHoursList.innerHTML = '';
-        
-        if (remainingSlots.length === 0) {
-            availableHoursList.innerHTML = '<li>No hay horarios disponibles para esta fecha.</li>';
-            if (timeInput) timeInput.disabled = false;
+            availableHoursList.innerHTML = '';
+            
+            if (remainingSlots.length === 0) {
+                availableHoursList.innerHTML = '<li>No hay horarios disponibles para esta fecha.</li>';
+                if (timeInput) timeInput.disabled = false;
+            } else {
+                remainingSlots.forEach(slot => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = slot;
+                    listItem.addEventListener('click', () => {
+                        const [time, period] = slot.split(' ');
+                        let [hours, minutes] = time.split(':');
+                        hours = parseInt(hours);
+                        
+                        if (period === 'PM' && hours !== 12) hours += 12;
+                        if (period === 'AM' && hours === 12) hours = 0;
+                        
+                        const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes}`;
+                        if (timeInput) {
+                            timeInput.value = formattedTime;
+                            timeInput.disabled = false;
+                        }
+                        
+                        document.querySelectorAll('#available-hours-list li').forEach(item => 
+                            item.classList.remove('selected'));
+                        listItem.classList.add('selected');
+                    });
+                    availableHoursList.appendChild(listItem);
+                });
+            }
         } else {
-            remainingSlots.forEach(slot => {
+            // Fallback si no se puede obtener el horario
+            console.error('Error obteniendo horario por defecto, usando fallback');
+            const fallbackSlots = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'].map(convertToAMPM);
+            
+            availableHoursList.innerHTML = '';
+            fallbackSlots.forEach(slot => {
                 const listItem = document.createElement('li');
                 listItem.textContent = slot;
                 listItem.addEventListener('click', () => {
@@ -245,121 +248,114 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// Función unificada para cargar citas
-function loadAppointments(barbero = 'todos') {
-    let url = '/api/appointments';
-    
-    // Si no es 'todos', agregar filtro por barbero
-    if (barbero !== 'todos') {
-        url += `?barbero=${barbero}`;
-    }
-
-    fetch(url)
-        .then(response => response.json())
-        .then(appointments => {
-            const container = document.getElementById('appointments-container');
-            if (!container) return; // Si no existe el contenedor, salir
-            
-            container.innerHTML = '';
-
-            const now = new Date();
-            const today = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
-            today.setHours(0, 0, 0, 0);
-            
-            const todayStr = today.toISOString().split('T')[0];
-            
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-            const formatLocalDate = (dateStr) => {
-                const date = new Date(`${dateStr}T00:00:00`);
-                return date.toLocaleDateString('es-CO', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    timeZone: 'America/Bogota'
-                });
-            };
-
-            const todayAppointments = appointments.filter(app => {
-                const appDate = new Date(`${app.fecha}T00:00:00`);
-                return appDate.toISOString().split('T')[0] === todayStr;
-            });
-
-            const tomorrowAppointments = appointments.filter(app => {
-                const appDate = new Date(`${app.fecha}T00:00:00`);
-                return appDate.toISOString().split('T')[0] === tomorrowStr;
-            });
-
-            const upcomingAppointments = appointments.filter(app => {
-                const appDate = new Date(`${app.fecha}T00:00:00`);
-                return appDate > tomorrow && appDate >= today;
-            });
-
-            const sortByTime = (a, b) => a.hora.localeCompare(b.hora);
-            todayAppointments.sort(sortByTime);
-            tomorrowAppointments.sort(sortByTime);
-            upcomingAppointments.sort(sortByTime);
-
-            const renderGroup = (group, title, emoji) => {
-                if (group.length === 0) return '';
+    // Función unificada para cargar citas
+    function loadAppointments() {
+        fetch('/api/appointments')
+            .then(response => response.json())
+            .then(appointments => {
+                const container = document.getElementById('appointments-container');
+                if (!container) return;
                 
-                return `
-                    <div class="appointment-group">
-                        <h2 class="group-title" style="color: var(--primary-purple); text-align: center; margin-bottom: var(--spacing-xl); font-size: 1.8rem; font-weight: 700;">
-                            ${emoji} ${title} (${group.length})
-                        </h2>
-                        <div class="appointments-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--spacing-xl);">
-                            ${group.map(app => `
-                                <div class="appointment">
-                                    <div class="appointment-info" id="appointment-info-${app.id}">
-                                        <p><span class="field-title">Barbero:</span> <span class="field-data" style="font-weight: bold; color: var(--primary-purple);">${app.barbero}</span></p>
-                                        <p><span class="field-title">Hora:</span> <span class="field-data">${convertToAMPM(app.hora)}</span></p>
-                                        <p><span class="field-title">Nombre:</span> <span class="field-data">${app.nombre} ${app.apellido}</span></p>
-                                        <p><span class="field-title">Teléfono:</span> <span class="field-data">${app.telefono}</span></p>
-                                        <p><span class="field-title">Fecha:</span> <span class="field-data">${formatLocalDate(app.fecha)}</span></p>
-                                        <p><span class="field-title">Servicio:</span> <span class="field-data">${app.servicio}</span></p>
-                                        <div class="appointment-actions">
-                                            <button onclick="deleteAppointment(${app.id}, '${app.barbero}')">Eliminar</button>
-                                            <button onclick="showEditForm(${app.id})">Editar</button>
+                container.innerHTML = '';
+    
+                const now = new Date();
+                const today = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+                today.setHours(0, 0, 0, 0);
+                
+                const todayStr = today.toISOString().split('T')[0];
+                
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    
+                const formatLocalDate = (dateStr) => {
+                    const date = new Date(`${dateStr}T00:00:00`);
+                    return date.toLocaleDateString('es-CO', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        timeZone: 'America/Bogota'
+                    });
+                };
+    
+                const todayAppointments = appointments.filter(app => {
+                    const appDate = new Date(`${app.fecha}T00:00:00`);
+                    return appDate.toISOString().split('T')[0] === todayStr;
+                });
+    
+                const tomorrowAppointments = appointments.filter(app => {
+                    const appDate = new Date(`${app.fecha}T00:00:00`);
+                    return appDate.toISOString().split('T')[0] === tomorrowStr;
+                });
+    
+                const upcomingAppointments = appointments.filter(app => {
+                    const appDate = new Date(`${app.fecha}T00:00:00`);
+                    return appDate > tomorrow && appDate >= today;
+                });
+    
+                const sortByTime = (a, b) => a.hora.localeCompare(b.hora);
+                todayAppointments.sort(sortByTime);
+                tomorrowAppointments.sort(sortByTime);
+                upcomingAppointments.sort(sortByTime);
+    
+                const renderGroup = (group, title, emoji) => {
+                    if (group.length === 0) return '';
+                    
+                    return `
+                        <div class="appointment-group">
+                            <h2 class="group-title" style="color: var(--primary-purple); text-align: center; margin-bottom: var(--spacing-xl); font-size: 1.8rem; font-weight: 700;">
+                                ${emoji} ${title} (${group.length})
+                            </h2>
+                            <div class="appointments-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--spacing-xl);">
+                                ${group.map(app => `
+                                    <div class="appointment">
+                                        <div class="appointment-info" id="appointment-info-${app.id}">
+                                            <p><span class="field-title">Barbero:</span> <span class="field-data" style="font-weight: bold; color: var(--primary-purple);">${app.barbero}</span></p>
+                                            <p><span class="field-title">Hora:</span> <span class="field-data">${convertToAMPM(app.hora)}</span></p>
+                                            <p><span class="field-title">Nombre:</span> <span class="field-data">${app.nombre} ${app.apellido}</span></p>
+                                            <p><span class="field-title">Teléfono:</span> <span class="field-data">${app.telefono}</span></p>
+                                            <p><span class="field-title">Fecha:</span> <span class="field-data">${formatLocalDate(app.fecha)}</span></p>
+                                            <p><span class="field-title">Servicio:</span> <span class="field-data">${app.servicio}</span></p>
+                                            <div class="appointment-actions">
+                                                <button onclick="deleteAppointment(${app.id}, '${app.barbero}')">Eliminar</button>
+                                                <button onclick="showEditForm(${app.id})">Editar</button>
+                                            </div>
+                                        </div>
+                                        <div class="edit-form" id="edit-form-${app.id}" style="display: none;">
+                                            <h3>Editar Cita</h3>
+                                            <input type="text" id="edit-name-${app.id}" value="${app.nombre}" placeholder="Nombre">
+                                            <input type="text" id="edit-surname-${app.id}" value="${app.apellido}" placeholder="Apellido">
+                                            <input type="tel" id="edit-phone-${app.id}" value="${app.telefono}" placeholder="Teléfono">
+                                            <input type="date" id="edit-date-${app.id}" value="${app.fecha}">
+                                            <input type="time" id="edit-time-${app.id}" value="${app.hora}">
+                                            <select id="edit-service-${app.id}">
+                                                ${getServiceOptions(app.barbero, app.servicio)}
+                                            </select>
+                                            <div class="appointment-actions">
+                                                <button onclick="saveEdit(${app.id})" style="background: linear-gradient(135deg, var(--success-green) 0%, var(--success-green-dark) 100%);">Guardar</button>
+                                                <button onclick="cancelEdit(${app.id})" style="background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);">Cancelar</button>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="edit-form" id="edit-form-${app.id}" style="display: none;">
-                                        <h3>Editar Cita</h3>
-                                        <input type="text" id="edit-name-${app.id}" value="${app.nombre}" placeholder="Nombre">
-                                        <input type="text" id="edit-surname-${app.id}" value="${app.apellido}" placeholder="Apellido">
-                                        <input type="tel" id="edit-phone-${app.id}" value="${app.telefono}" placeholder="Teléfono">
-                                        <input type="date" id="edit-date-${app.id}" value="${app.fecha}">
-                                        <input type="time" id="edit-time-${app.id}" value="${app.hora}">
-                                        <select id="edit-service-${app.id}">
-                                            ${getServiceOptions(app.barbero, app.servicio)}
-                                        </select>
-                                        <div class="appointment-actions">
-                                            <button onclick="saveEdit(${app.id})" style="background: linear-gradient(135deg, var(--success-green) 0%, var(--success-green-dark) 100%);">Guardar</button>
-                                            <button onclick="cancelEdit(${app.id})" style="background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);">Cancelar</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
+                                `).join('')}
+                            </div>
                         </div>
-                    </div>
+                    `;
+                };
+    
+                container.innerHTML = `
+                    ${renderGroup(todayAppointments, 'Citas Hoy', '📅')}
+                    ${renderGroup(tomorrowAppointments, 'Citas Mañana', '⏳')}
+                    ${renderGroup(upcomingAppointments, 'Próximas Citas', '🗓️')}
                 `;
-            };
-
-            container.innerHTML = `
-                ${renderGroup(todayAppointments, 'Citas Hoy', '📅')}
-                ${renderGroup(tomorrowAppointments, 'Citas Mañana', '⏳')}
-                ${renderGroup(upcomingAppointments, 'Próximas Citas', '🗓️')}
-            `;
-
-            if (appointments.length === 0) {
-                container.innerHTML = '<p class="no-appointments" style="text-align: center; color: var(--text-light); font-size: 1.2rem; margin-top: var(--spacing-xxl);">No hay citas programadas.</p>';
-            }
-        })
-        .catch(error => console.error('Error:', error));
-}
+    
+                if (appointments.length === 0) {
+                    container.innerHTML = '<p class="no-appointments" style="text-align: center; color: var(--text-light); font-size: 1.2rem; margin-top: var(--spacing-xxl);">No hay citas programadas.</p>';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
 
 function getServiceOptions(barbero, currentService) {
     const serviciosPorBarbero = {
@@ -530,6 +526,9 @@ function applyFilters() {
         loadAppointments(window.currentBarbero || 'todos');
     }
     renderActiveFilters();
+
+    loadAppointments();
+  renderActiveFilters();
 }
 
 function filterAndSearchAppointments(date, searchTerm) {
