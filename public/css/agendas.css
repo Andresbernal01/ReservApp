@@ -1,0 +1,891 @@
+/* =====================================================
+   AGENDA GIOVANY - CSS OPTIMIZADO V2
+   ===================================================== */
+
+/* ==================== RESET Y BASE ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* Colores principales */
+    --primary-purple: #9982BC;
+    --dark-purple: #7a66a0;
+    --accent-orange: #FF5733;
+    --success-green: #4CAF50;
+    --success-green-dark: #45a049;
+    --bg-dark: #1c1c1c;
+    --bg-card: #313632;
+    --bg-header: #282828;
+    --text-light: #ffffff;
+    --text-dark: #333333;
+    --border-color: #9982BC;
+    
+    /* Espaciado */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-xxl: 3rem;
+    
+    /* Bordes */
+    --border-radius-sm: 5px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-round: 50%;
+    
+    /* Sombras */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
+    --shadow-glow: 0 0 10px rgba(153, 130, 188, 0.3);
+    
+    /* Transiciones */
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ==================== HEADER ==================== */
+#header-container {
+    background: linear-gradient(135deg, var(--bg-header) 0%, #3a3a3a 100%);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+    border-bottom: 3px solid var(--primary-purple);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--spacing-md) var(--spacing-lg);
+    gap: var(--spacing-md);
+}
+
+.logo-container {
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+.logo-container:hover {
+    transform: scale(1.02);
+}
+
+.header-title {
+    color: var(--primary-purple);
+    font-weight: 700;
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.5px;
+}
+
+.inicio-btn {
+    background: linear-gradient(135deg, var(--success-green) 0%, var(--success-green-dark) 100%);
+    color: var(--text-light);
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: clamp(0.9rem, 2.5vw, 1rem);
+    font-weight: 600;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    min-width: 80px;
+}
+
+.inicio-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius-round);
+    transition: all var(--transition-normal);
+    transform: translate(-50%, -50%);
+}
+
+.inicio-btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.inicio-btn:hover {
+    background: linear-gradient(135deg, var(--success-green-dark) 0%, #3d8b40 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(76, 175, 80, 0.3);
+}
+
+.inicio-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ==================== NAVEGACIÓN ==================== */
+.nav-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-lg);
+    margin: var(--spacing-xl) 0;
+    padding: 0 var(--spacing-lg);
+}
+
+.nav-buttons button {
+    background: linear-gradient(135deg, var(--primary-purple) 0%, var(--dark-purple) 100%);
+    color: var(--text-light);
+    border: none;
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    font-weight: 600;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+    min-width: 140px;
+    letter-spacing: 0.5px;
+}
+
+.nav-buttons button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius-round);
+    transition: all var(--transition-normal);
+    transform: translate(-50%, -50%);
+}
+
+.nav-buttons button:hover::after {
+    width: 200px;
+    height: 200px;
+}
+
+.nav-buttons button:hover {
+    background: linear-gradient(135deg, var(--dark-purple) 0%, #5d4a7a 100%);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(153, 130, 188, 0.4);
+}
+
+.nav-buttons button:active {
+    transform: translateY(-1px) scale(1.01);
+}
+
+/* ==================== DROPDOWNS ==================== */
+.dropdown-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 var(--spacing-lg);
+}
+
+.dropdown-content {
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #2a2a2a 100%);
+    border: 2px solid var(--primary-purple);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-xl);
+    margin: var(--spacing-lg) 0;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dropdown-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+.dropdown-content label {
+    color: var(--primary-purple);
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: block;
+    margin-bottom: var(--spacing-sm);
+}
+
+#filter-date-container input,
+#search-container input {
+    width: 100%;
+    padding: var(--spacing-md);
+    margin: var(--spacing-md) 0 var(--spacing-lg) 0;
+    background: linear-gradient(135deg, var(--bg-card) 0%, #3a3f3b 100%);
+    border: 2px solid var(--primary-purple);
+    border-radius: var(--border-radius-md);
+    color: var(--text-light);
+    font-size: 1rem;
+    transition: all var(--transition-normal);
+    outline: none;
+}
+
+#filter-date-container input:focus,
+#search-containerr input:focus {
+    border-color: var(--accent-orange);
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-2px);
+}
+
+#filter-date-container input::placeholder,
+#search-container input::placeholder {
+    color: var(--primary-purple);
+    opacity: 0.7;
+}
+
+#filter-date-container button,
+#search-container button {
+    background: linear-gradient(135deg, var(--primary-purple) 0%, var(--dark-purple) 100%);
+    color: var(--text-light);
+    border: none;
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    width: 100%;
+    font-size: 1.1rem;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+}
+
+#filter-date-container button:hover,
+#search-container button:hover {
+    background: linear-gradient(135deg, var(--dark-purple) 0%, #5d4a7a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(153, 130, 188, 0.4);
+}
+
+/* ==================== GRUPOS DE CITAS ==================== */
+.appointment-group {
+    width: 100%;
+    margin-bottom: var(--spacing-xxl);
+}
+
+.group-title {
+    color: var(--primary-purple);
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    font-size: clamp(1.4rem, 4vw, 1.8rem);
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.appointments-grid {
+    display: grid;
+    gap: var(--spacing-xl);
+    width: 100%;
+}
+
+/* ==================== CONTENEDOR PRINCIPAL DE CITAS ==================== */
+#appointments-container {
+    padding: var(--spacing-xl);
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* ==================== TARJETAS DE CITAS - UNIFORMES ==================== */
+.appointment {
+    background: linear-gradient(135deg, var(--bg-card) 0%, #3a3f3b 100%);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(153, 130, 188, 0.2);
+    
+    /* ALTURA FIJA PARA UNIFORMIDAD */
+    min-height: 280px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.appointment::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-purple), var(--accent-orange));
+}
+
+.appointment:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    border-color: var(--primary-purple);
+}
+
+.appointment-info,
+.edit-form {
+    padding: var(--spacing-lg);
+    color: var(--text-light);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* ==================== CAMPOS DE INFORMACIÓN - HORIZONTALES ==================== */
+.appointment-info p {
+    margin-bottom: var(--spacing-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: var(--spacing-sm);
+    min-height: 24px;
+}
+
+.field-title {
+    color: var(--accent-orange);
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    min-width: 60px;
+}
+
+.field-data {
+    color: var(--text-light);
+    font-weight: 500;
+    text-align: right;
+    word-break: break-word;
+    flex: 1;
+    font-size: 0.95rem;
+}
+
+/* ==================== FORMULARIO DE EDICIÓN ==================== */
+.edit-form {
+    background: linear-gradient(135deg, var(--bg-card) 0%, #3a3f3b 100%);
+    border-top: 2px solid var(--primary-purple);
+}
+
+.edit-form h3 {
+    color: var(--primary-purple);
+    margin-bottom: var(--spacing-md);
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+.edit-form input,
+.edit-form select {
+    width: 100%;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #2a2a2a 100%);
+    border: 2px solid var(--primary-purple);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-light);
+    font-size: 0.9rem;
+    transition: all var(--transition-normal);
+    outline: none;
+}
+
+.edit-form input:focus,
+.edit-form select:focus {
+    border-color: var(--accent-orange);
+    box-shadow: var(--shadow-glow);
+}
+
+/* ==================== BOTONES DE ACCIÓN ==================== */
+.appointment-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-top: auto;
+    padding-top: var(--spacing-sm);
+}
+
+.appointment-actions button,
+.appointment-info button,
+.edit-form button {
+    background: linear-gradient(135deg, var(--primary-purple) 0%, var(--dark-purple) 100%);
+    color: var(--text-light);
+    border: none;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    flex: 1;
+    min-height: 36px;
+}
+
+.appointment-actions button:hover,
+.appointment-info button:hover,
+.edit-form button:hover {
+    background: linear-gradient(135deg, var(--dark-purple) 0%, #5d4a7a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(153, 130, 188, 0.4);
+}
+
+/* ==================== BOTÓN SCROLL TOP ==================== */
+#scrollTopBtn {
+    position: fixed;
+    bottom: var(--spacing-xl);
+    right: var(--spacing-xl);
+    background: linear-gradient(135deg, var(--primary-purple) 0%, var(--dark-purple) 100%);
+    color: var(--text-light);
+    border: none;
+    width: 60px;
+    height: 60px;
+    border-radius: var(--border-radius-round);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: all var(--transition-normal);
+    z-index: 1000;
+}
+
+#scrollTopBtn:hover {
+    background: linear-gradient(135deg, var(--dark-purple) 0%, #5d4a7a 100%);
+    transform: translateY(-3px) scale(1.1);
+    box-shadow: 0 8px 20px rgba(153, 130, 188, 0.5);
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+
+/* Extra Large Screens - 4 columnas */
+@media screen and (min-width: 1400px) {
+    .appointments-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Large Screens - 3 columnas */
+@media screen and (min-width: 1024px) and (max-width: 1399px) {
+    .appointments-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Medium Screens - 2 columnas */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+    .appointments-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-lg);
+    }
+    
+    .appointment {
+        min-height: 260px;
+    }
+    
+    .field-title {
+        font-size: 0.8rem;
+        min-width: 55px;
+    }
+    
+    .field-data {
+        font-size: 0.9rem;
+    }
+}
+
+/* Small Screens - 1 columna */
+@media screen and (max-width: 767px) {
+    :root {
+        --spacing-xl: 1rem;
+        --spacing-xxl: 1.5rem;
+    }
+    
+    .header-content {
+        flex-direction: row;
+        padding: var(--spacing-md);
+        gap: var(--spacing-sm);
+    }
+    
+    .nav-buttons {
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin: var(--spacing-lg) 0;
+    }
+    
+    .nav-buttons button {
+        width: 90%;
+        max-width: 300px;
+    }
+    
+    #appointments-container {
+        padding: var(--spacing-md);
+    }
+    
+    .appointments-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
+    }
+    
+    .appointment {
+        min-height: auto;
+        height: auto;
+    }
+    
+    /* CAMBIO CLAVE: Campos verticales en móvil */
+    .appointment-info p {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        gap: var(--spacing-xs);
+    }
+    
+    .field-title {
+        margin-bottom: 0;
+        align-self: flex-start;
+    }
+    
+    .field-data {
+        text-align: left;
+        align-self: flex-start;
+        width: 100%;
+    }
+    
+    .appointment-actions {
+        flex-direction: row;
+        gap: var(--spacing-sm);
+    }
+    
+    .appointment-actions button {
+        flex: 1;
+        font-size: 0.8rem;
+        padding: var(--spacing-sm);
+    }
+    
+    .dropdown-content {
+        padding: var(--spacing-md);
+        margin: var(--spacing-md) 0;
+    }
+    
+    #scrollTopBtn {
+        width: 50px;
+        height: 50px;
+        bottom: var(--spacing-lg);
+        right: var(--spacing-lg);
+    }
+}
+
+/* Extra Small Screens */
+@media screen and (max-width: 480px) {
+    .header-content {
+        padding: var(--spacing-sm);
+    }
+    
+    .appointment-info,
+    .edit-form {
+        padding: var(--spacing-md);
+    }
+    
+    .field-title {
+        font-size: 0.8rem;
+    }
+    
+    .field-data {
+        font-size: 0.9rem;
+    }
+}
+
+/* ==================== ESTADOS DE NO HAY CITAS ==================== */
+.no-appointments {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 1.2rem;
+    margin-top: var(--spacing-xxl);
+    padding: var(--spacing-xl);
+    background: linear-gradient(135deg, var(--bg-card) 0%, #3a3f3b 100%);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid rgba(153, 130, 188, 0.2);
+}
+
+/* ==================== ANIMACIONES ==================== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.appointment {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* ==================== ACCESIBILIDAD ==================== */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    html {
+        scroll-behavior: auto;
+    }
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
+}
+
+/* ==================== MEJORAS DE RENDIMIENTO ==================== */
+.appointment,
+.nav-buttons button,
+.inicio-btn {
+    will-change: transform;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* ==================== LOADING STATES ==================== */
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(153, 130, 188, 0.2), 
+        transparent
+    );
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+
+
+/* Agrega esto al archivo agendas.css */
+
+/* Mejoras para los botones de navegación */
+.nav-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin: var(--spacing-lg) 0;
+    padding: 0 var(--spacing-md);
+}
+
+/* Contenedor de dropdowns mejorado */
+.dropdown-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 var(--spacing-md);
+    gap: var(--spacing-md);
+}
+
+/* Contenedor de filtros activos */
+#active-filters {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin: var(--spacing-md) auto;
+    padding: 0 var(--spacing-md);
+    max-width: 800px;
+}
+
+/* Media queries para móviles */
+@media screen and (max-width: 767px) {
+    .nav-buttons {
+        flex-direction: row;
+        gap: var(--spacing-sm);
+    }
+    
+    .nav-buttons button {
+        flex: 1;
+        min-width: 120px;
+        max-width: 160px;
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+    
+    .dropdown-content {
+        width: 90%;
+        max-width: 350px;
+        padding: var(--spacing-md);
+    }
+    
+    #active-filters {
+        justify-content: flex-start;
+        padding: 0 var(--spacing-md);
+    }
+}
+
+
+/* ===== Barra de filtros estilizada ===== */
+.filters-bar {
+    display: flex;
+    gap: 10px;
+    margin: 20px auto;
+    padding: 10px;
+    max-width: 900px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.filters-bar > div {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    background: var(--bg-card);
+    padding: 6px 8px;
+    border-radius: var(--border-radius-md);
+    border: 1px solid rgba(153, 130, 188, 0.4);
+    box-shadow: var(--shadow-sm);
+}
+
+.filters-bar input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-light);
+    font-size: 16px; /* ✅ Evita zoom en móviles iOS */
+    padding: 6px;
+    min-width: 140px;
+    -webkit-text-size-adjust: 100%; /* Evita que iOS cambie el tamaño */
+}
+
+
+.filters-bar input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) opacity(0.7);
+    cursor: pointer;
+}
+
+.filters-bar input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.filters-bar button {
+    background: var(--primary-purple);
+    color: var(--text-light);
+    border: none;
+    padding: 6px 12px;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.filters-bar button:hover {
+    background: var(--dark-purple);
+    transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filters-bar > div {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .filters-bar input {
+        flex: 1;
+    }
+    .filters-bar button {
+        flex-shrink: 0;
+    }
+}
+
+
+
+
+
+/* Placeholder para input date en iOS */
+.filters-bar input[type="date"] {
+    position: relative;
+    font-size: 16px; /* Evita zoom en iOS */
+    color-scheme: dark; /* Usa selector de fecha oscuro si disponible */
+}
+
+/* Texto "falso" cuando está vacío */
+.filters-bar input[type="date"]:not(:focus):invalid::before {
+    content: "dd/mm/aa";
+    color: rgba(255, 255, 255, 0.6);
+    position: absolute;
+    left: 10px;
+}
+
+/* Quitar el texto cuando hay valor */
+.filters-bar input[type="date"]:valid::before {
+    content: "";
+}

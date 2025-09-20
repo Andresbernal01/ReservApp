@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barbería Zahara - Reserva de Citas</title>
+    <link rel="icon" href="img/Imagotipo Zahara Studio.ico">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/panelBuscar.css">
+    <link rel="stylesheet" href="css/panelBuscar.css">
+</head>
+<script>
+    // Solución definitiva para iOS para ver mejor input fecha
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('date');
+
+        // Abrir calendario al hacer clic en cualquier parte del input
+dateInput.addEventListener('click', function() {
+    this.showPicker && this.showPicker();
+});
+
+        
+        // Solo aplicar esta solución en Safari/iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        
+        if (isIOS && isSafari) {
+            // Crear contenedor
+            const container = document.createElement('div');
+            container.style.position = 'relative';
+            container.style.width = '100%';
+            
+            // Mover el input dentro del contenedor
+            dateInput.parentNode.insertBefore(container, dateInput);
+            container.appendChild(dateInput);
+            
+            // Crear overlay para el texto
+            const overlay = document.createElement('div');
+            overlay.style.position = 'absolute';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.right = '0';
+            overlay.style.bottom = '0';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.pointerEvents = 'none';
+            overlay.style.color = dateInput.value ? '#ffffff' : '#888888';
+            overlay.style.fontSize = '1rem';
+            overlay.textContent = dateInput.value ? '' : 'Selecciona una fecha';
+            
+            // Actualizar al cambiar la fecha
+            dateInput.addEventListener('change', function() {
+                if (this.value) {
+                    overlay.textContent = '';
+                    overlay.style.color = '#ffffff';
+                } else {
+                    overlay.textContent = 'Selecciona una fecha';
+                    overlay.style.color = '#888888';
+                }
+            });
+            
+            container.appendChild(overlay);
+            
+            // Forzar actualización inicial
+            dateInput.dispatchEvent(new Event('change'));
+        }
+    });
+    </script>
+<body>
+    <header class="app-header">
+        <img src="img/Logotipo Zahara Studio PNG.png" alt="Zahara Studio Logo">
+    </header>
+    <div class="booking-container">
+        <div class="steps-progress">
+            <div class="step active" data-step="1"></div>
+            <div class="step" data-step="2"></div>
+            <div class="step" data-step="3"></div>
+            <div class="step" data-step="4"></div>
+            <div class="step" data-step="5"></div>
+        </div>
+
+        <!-- Paso 1: Selección de Profesional -->
+<!-- Paso 1: Selección de Profesional -->
+<div class="booking-step active" data-step="1">
+    <h2>Elige tu Profesional</h2>
+    <!-- Este contenedor se poblará dinámicamente -->
+    <div id="professionals-container"></div>
+    
+    <div class="check-status-container">
+        <button type="button" id="check-status-button">Consulta tu cita</button>
+    </div>
+</div>
+
+        <!-- Paso 2: Selección de Servicio -->
+        <div class="booking-step" data-step="2">
+            <h2>Elige tu Servicio</h2>
+            <div id="services-container"></div>
+        </div>
+
+        <!-- Paso 3: Datos Personales -->
+        <div class="booking-step" data-step="3">
+            <h2>Tus Datos</h2>
+            <input type="text" id="name" placeholder="Nombre" required>
+            <div id="name-error" class="error"></div>
+            <input type="text" id="surname" placeholder="Apellido" required>
+            <div id="surname-error" class="error"></div>
+            <input type="tel" id="phone" placeholder="Número de teléfono" required>
+            <div id="phone-error" class="error"></div>
+        </div>
+
+        <!-- Paso 4: Fecha y Hora -->
+        <div class="booking-step" data-step="4">
+            <h2>Elige Fecha y Hora</h2>
+            <input type="date" id="date" required class="custom-date-input" placeholder=" ">
+            <div id="available-hours-list"></div>
+        </div>
+
+        <!-- Paso 5: Confirmación -->
+        <div class="booking-step" data-step="5">
+            <h2>Confirmar Cita</h2>
+            <div id="confirmation-details">
+                <p><strong>Profesional:</strong> <span id="confirm-professional"></span></p>
+                <p><strong>Servicio:</strong> <span id="confirm-service"></span></p>
+                <p><strong>Nombre:</strong> <span id="confirm-name"></span></p>
+                <p><strong>Teléfono:</strong> <span id="confirm-phone"></span></p>
+                <p><strong>Fecha:</strong> <span id="confirm-date"></span></p>
+                <p><strong>Hora:</strong> <span id="confirm-time"></span></p>
+            </div>
+        </div>
+
+        <!-- Botones de Navegación -->
+        <div class="navigation-buttons-cita">
+            <button id="prev-btn" class="btn" style="display: none;">Anterior</button>
+            <button id="next-btn" class="btn">Siguiente</button>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <img src="img/logo.png" alt="Andresoft Logo" class="footer-logo">
+            <a href="https://Andresoftoficial.com" target="_blank" class="footer-text">Powered by Andresoft</a>
+        </div>
+    </footer>
+
+    <script src="js/index.js"></script>
+</body>
+</html>
