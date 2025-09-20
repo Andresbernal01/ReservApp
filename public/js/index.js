@@ -1,7 +1,40 @@
 // Variables globales
 let barberiaConfig = null;
-let barberos = []; // Mover barberos al ámbito global
-let selectedBarbero = null; // Mover selectedBarbero al ámbito global
+let barberos = [];
+let selectedBarbero = null;
+let servicesContainer = null;
+let dateInput = null;
+let availableHoursList = null;
+let barberoIdInput = null;
+let serviceInput = null;
+let timeInput = null;
+let nextBtn = null;
+let prevBtn = null;
+
+// Funciones globales
+function resetTimeSelection() {
+    if (timeInput) timeInput.value = '';
+    document.querySelectorAll('#available-hours-list li').forEach(item => {
+        item.classList.remove('selected');
+    });
+    if (nextBtn) nextBtn.disabled = true;
+}
+
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+
+
+function convertToAMPM(hour) {
+    const [h, m] = hour.split(':');
+    const hours = parseInt(h, 10);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const newHours = hours % 12 || 12;
+    return `${newHours}:${m} ${ampm}`;
+}
 
 // Función para renderizar barberos (mover al ámbito global)
 function renderBarberos() {
@@ -348,56 +381,41 @@ function formatTime(timeString) {
 }
 
 // CAMBIO AQUÃ: Hacer la funciÃ³n async
+// CAMBIO AQUÍ: Hacer la función async
 document.addEventListener('DOMContentLoaded', async function() {
-    // PRIMERO cargar configuraciÃ³n de barberÃ­a
+    // PRIMERO cargar configuración de barbería
     await loadBarberiaConfig();
 
     const steps = document.querySelectorAll('.booking-step');
     const progressSteps = document.querySelectorAll('.step');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
+    prevBtn = document.getElementById('prev-btn');
+    nextBtn = document.getElementById('next-btn');
     let currentStep = 0;
 
-    // Variables globales para almacenar datos
-    let selectedBarbero = null;
 
-    function resetTimeSelection() {
-        timeInput.value = '';
-        document.querySelectorAll('#available-hours-list li').forEach(item => {
-            item.classList.remove('selected');
-        });
-        nextBtn.disabled = true;
-    }
 
-    function scrollToTop() {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    }
-
-    // Elementos del DOM
-    const dateInput = document.getElementById('date');
-    const availableHoursList = document.getElementById('available-hours-list');
-    const servicesContainer = document.getElementById('services-container');
+    // Elementos del DOM - ASIGNAR A VARIABLES GLOBALES
+    dateInput = document.getElementById('date');
+    availableHoursList = document.getElementById('available-hours-list');
+    servicesContainer = document.getElementById('services-container');
 
     // Inputs ocultos
-    const barberoIdInput = document.createElement('input');
+    barberoIdInput = document.createElement('input');
     barberoIdInput.type = 'hidden';
     barberoIdInput.id = 'barbero_id';
     document.body.appendChild(barberoIdInput);
 
-    const serviceInput = document.createElement('input');
+    serviceInput = document.createElement('input');
     serviceInput.type = 'hidden';
     serviceInput.id = 'service';
     document.body.appendChild(serviceInput);
 
-    const timeInput = document.createElement('input');
+    timeInput = document.createElement('input');
     timeInput.type = 'hidden';
     timeInput.id = 'time';
     document.body.appendChild(timeInput);
 
-    // Configurar fechas mÃ­nima y mÃ¡xima
+    // Configurar fechas mínima y máxima
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -421,22 +439,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         oneMonthLater.setHours(23, 59, 59, 999);
     
         if (selectedDate < today || selectedDate > oneMonthLater) {
-            alert('Selecciona una fecha vÃ¡lida entre hoy y un mes a partir de hoy.');
+            alert('Selecciona una fecha válida entre hoy y un mes a partir de hoy.');
             dateInput.value = '';
         }
     });
-
-
-
-
-
-    function convertToAMPM(hour) {
-        const [h, m] = hour.split(':');
-        const hours = parseInt(h, 10);
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        const newHours = hours % 12 || 12;
-        return `${newHours}:${m} ${ampm}`;
-    }
 
 
 
@@ -446,7 +452,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateAvailableTimeSlots();
     });
 
-    // ValidaciÃ³n de pasos
+    // Validación de pasos
     function validateStep() {
         switch(currentStep) {
             case 0: // Professional
@@ -468,7 +474,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 let isValid = true;
 
-                // ValidaciÃ³n de nombre
+                // Validación de nombre
                 if (!name) {
                     nameError.textContent = 'Nombre es requerido';
                     isValid = false;
@@ -479,7 +485,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     nameError.textContent = '';
                 }
 
-                // ValidaciÃ³n de apellido
+                // Validación de apellido
                 if (!surname) {
                     surnameError.textContent = 'Apellido es requerido';
                     isValid = false;
@@ -490,13 +496,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                     surnameError.textContent = '';
                 }
 
-                // ValidaciÃ³n de telÃ©fono
+                // Validación de teléfono
                 const phoneRegex = /^[3-7][0-9]{9}$/;
                 if (!phone) {
-                    phoneError.textContent = 'TelÃ©fono es requerido';
+                    phoneError.textContent = 'Teléfono es requerido';
                     isValid = false;
                 } else if (!phoneRegex.test(phone)) {
-                    phoneError.textContent = 'TelÃ©fono invÃ¡lido (10 dÃ­gitos, comienza con 3-7)';
+                    phoneError.textContent = 'Teléfono inválido (10 dígitos, comienza con 3-7)';
                     isValid = false;
                 } else {
                     phoneError.textContent = '';
@@ -517,7 +523,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // NavegaciÃ³n
+    // Navegación
     prevBtn.addEventListener('click', () => {
         if (currentStep > 0) {
             steps[currentStep].classList.remove('active');
@@ -536,7 +542,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // Event listeners para validaciÃ³n en tiempo real
+    // Event listeners para validación en tiempo real
     document.getElementById('name').addEventListener('input', validateStep);
     document.getElementById('surname').addEventListener('input', validateStep);
     document.getElementById('phone').addEventListener('input', validateStep);
@@ -583,7 +589,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <p><strong>Profesional:</strong> <span id="confirm-professional">${selectedBarbero.nombre}</span></p>
                     <p><strong>Servicio:</strong> <span id="confirm-service">${appointment.servicio}</span></p>
                     <p><strong>Nombre:</strong> <span id="confirm-name">${appointment.nombre} ${appointment.apellido}</span></p>
-                    <p><strong>TelÃ©fono:</strong> <span id="confirm-phone">${appointment.telefono}</span></p>
+                    <p><strong>Teléfono:</strong> <span id="confirm-phone">${appointment.telefono}</span></p>
                     <p><strong>Fecha:</strong> <span id="confirm-date">${formatDate(appointment.fecha)}</span></p>
                     <p><strong>Hora:</strong> <span id="confirm-time">${formatTime(appointment.hora)}</span></p>
                 `;
@@ -604,9 +610,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // Modal de confirmaciÃ³n
+    // Modal de confirmación
     async function showConfirmationModal(appointment) {
-        // Verificar si ya tiene cita el mismo dÃ­a
+        // Verificar si ya tiene cita el mismo día
         const horaExistente = await checkExistingAppointmentSameDay(appointment);
     
         if (horaExistente) {
@@ -620,11 +626,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                             Ya tienes una cita el ${formatDate(appointment.fecha)}
                         </h2>
                         <p style="margin-bottom:1.5rem;">
-                            A las <strong>${formatTime(horaExistente)}</strong>. Â¿Quieres agendar otra?
+                            A las <strong>${formatTime(horaExistente)}</strong>. ¿Quieres agendar otra?
                         </p>
                         <div style="display:flex;gap:1rem;justify-content:center;">
                             <button id="cancel-existing" style="background:#f44336;padding:0.6rem 1.5rem;border:none;border-radius:8px;color:white;cursor:pointer;">No</button>
-                            <button id="continue-existing" style="background:#4caf50;padding:0.6rem 1.5rem;border:none;border-radius:8px;color:white;cursor:pointer;">SÃ­</button>
+                            <button id="continue-existing" style="background:#4caf50;padding:0.6rem 1.5rem;border:none;border-radius:8px;color:white;cursor:pointer;">Sí</button>
                         </div>
                     </div>
                 </div>
@@ -648,21 +654,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // FunciÃ³n auxiliar para verificar citas existentes el mismo dÃ­a
-
-    
-    // Modal final de confirmaciÃ³n
+    // Modal final de confirmación
     function renderFinalConfirmationModal(appointment) {
         const confirmationHTML = `
             <div id="confirmation-modal">
                 <div>
                     <h2>Confirmar Cita</h2>
-                    <p>Â¿EstÃ¡s seguro de que deseas agendar esta cita?</p>
+                    <p>¿Estás seguro de que deseas agendar esta cita?</p>
                     <div style="text-align: left; margin: 20px 0;">
-                        <p>ðŸ“… Fecha: ${formatDate(appointment.fecha)}</p>
-                        <p>â° Hora: ${formatTime(appointment.hora)}</p>
-                        <p>ðŸ’‡ Barbero: ${selectedBarbero.nombre}</p>
-                        <p>âœ‚ï¸ Servicio: ${appointment.servicio}</p>
+                        <p>📅 Fecha: ${formatDate(appointment.fecha)}</p>
+                        <p>⏰ Hora: ${formatTime(appointment.hora)}</p>
+                        <p>💁 Barbero: ${selectedBarbero.nombre}</p>
+                        <p>✂️ Servicio: ${appointment.servicio}</p>
                     </div>
                     <div>
                         <button id="cancel-booking">Cancelar</button>
@@ -685,7 +688,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         confirmButton.addEventListener('click', () => {
             confirmModal.remove();
 
-            // LÃ³gica de mÃ¡ximo 2 citas en 24 horas
+            // Lógica de máximo 2 citas en 24 horas
             const currentTime = new Date().getTime();
             let previousBookings = JSON.parse(localStorage.getItem('previousBookings') || '[]');
 
@@ -696,8 +699,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             previousBookings.push(currentTime);
             localStorage.setItem('previousBookings', JSON.stringify(previousBookings));
 
-            // Llamada al backend
-            fetch('/api/appointments', {
+            // Llamada al backend con buildApiUrl
+            fetch(buildApiUrl('/api/appointments'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(appointment)
@@ -706,12 +709,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (response.ok) {
                     localStorage.setItem('lastBookingTime', currentTime.toString());
                     
-                    // Usar la funciÃ³n global showSuccessModal de Agendar.js
+                    // Usar la función global showSuccessModal de Agendar.js
                     if (typeof showSuccessModal === 'function') {
                         showSuccessModal(appointment);
                     } else {
-                        // Fallback si la funciÃ³n no estÃ¡ disponible
-                        alert('Â¡Cita agendada exitosamente!');
+                        // Fallback si la función no está disponible
+                        alert('¡Cita agendada exitosamente!');
                         window.location.reload();
                     }
                     
@@ -733,7 +736,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // FunciÃ³n para resetear el flujo de reserva
+    // Función para resetear el flujo de reserva
     function resetBookingFlow() {
         steps[currentStep].classList.remove('active');
         currentStep = 0;
@@ -763,11 +766,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Verificar que el contenedor existe
     const professionalsContainer = document.getElementById('professionals-container');
     if (!professionalsContainer) {
-        console.error('No se encontrÃ³ el contenedor de profesionales');
+        console.error('No se encontró el contenedor de profesionales');
         return;
     }
     
-    // InicializaciÃ³n
+    // Inicialización
     await loadBarberos();
     updateCheckStatusButtonVisibility();
     nextBtn.disabled = true;

@@ -262,39 +262,39 @@ app.get('/api/barberos/:id/servicios', identifyBarberia, async (req, res) => {
   const { id } = req.params;
   
   try {
-    // Obtener información del barbero (verificar que pertenece a la barbería)
+    // Verificar que el barbero pertenece a la barbería
     const { data: barbero, error: barberoError } = await supabase
       .from('barberos')
       .select('nombre')
       .eq('id', id)
-      .eq('barberia_id', req.barberia.id) // VERIFICAR BARBERÍA
+      .eq('barberia_id', req.barberia.id)
       .single();
 
     if (barberoError || !barbero) {
       return res.status(404).json({ error: 'Barbero no encontrado en esta barbería' });
     }
 
-    // Servicios hardcodeados por ahora (podrías hacer esto dinámico después)
-    const serviciosPorBarbero = {
-      Giovany: [
-        { value: "Corte de cabello", text: "Corte de cabello", image: "img/corte.jpg" },
-        { value: "Barba", text: "Barba", image: "img/barba.jpg" },
-        { value: "Corte y Barba", text: "Corte y Barba", image: "img/corte-barba.jpg" }
-      ],
-      Danitza: [
-        { value: "Corte", text: "Corte", image: "img/corte.jpg" },
-        { value: "Depilaciones", text: "Depilaciones", image: "img/depilacion.jpg" },
-        { value: "Limpieza facial", text: "Limpieza facial", image: "img/limpieza.jpg" },
-        { value: "Peinados", text: "Peinados", image: "img/peinado.jpg" },
-        { value: "Trenzados", text: "Trenzados", image: "img/trenzas.jpg" },
-        { value: "Colorimetria Artistica", text: "Colorimetria Artistica", image: "img/color.jpg" },
-        { value: "Maquillaje", text: "Maquillaje", image: "img/maquillaje.jpg" },
-        { value: "Masajes", text: "Masajes", image: "img/masajes.jpg" }
-      ]
-    };
+    // Obtener servicios desde la base de datos
+    const { data: servicios, error } = await supabase
+      .from('servicios')
+      .select('id, nombre, descripcion, imagen_url')
+      .eq('barbero_id', id)
+      .eq('activo', true)
+      .order('nombre');
 
-    const servicios = serviciosPorBarbero[barbero.nombre] || [];
-    res.json(servicios);
+    if (error) {
+      console.error('Error obteniendo servicios:', error);
+      return res.status(500).json({ error: 'Error al obtener servicios' });
+    }
+
+    // Formatear para compatibilidad con el frontend
+    const serviciosFormateados = servicios.map(servicio => ({
+      value: servicio.nombre,
+      text: servicio.nombre,
+      image: servicio.imagen_url || "img/default-service.jpg"
+    }));
+
+    res.json(serviciosFormateados);
 
   } catch (error) {
     console.error('Error en GET servicios:', error);
@@ -595,6 +595,36 @@ app.get('/api/barberos/:id/horario-defecto', identifyBarberia, async (req, res) 
 
   } catch (error) {
     console.error('Error obteniendo horario por defecto:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+
+
+
+// Crear servicio
+app.post('/api/barberos/:id/servicios', verifyAuth, async (req, res) => {
+  const { id } = req.params;
+  const { nombre, descripcion, imagen_url } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('servicios')
+      .insert([{
+        barbero_id: id,
+        nombre,
+        descripcion,
+        imagen_url
+      }])
+      .select();
+
+    if (error) {
+      return res.status(500).json({ error: 'Error creando servicio' });
+    }
+
+    res.json({ message: 'Servicio creado exitosamente', data });
+  } catch (error) {
+    console.error('Error creando servicio:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

@@ -208,41 +208,53 @@ const formatTime = (timeString) => {
     });
 };
 
-// Cargar servicios según el barbero
 document.addEventListener('DOMContentLoaded', function () {
     const barberoInput = document.getElementById('barbero');
     const serviceInput = document.getElementById('service');
 
-    const serviciosPorBarbero = {
-        Giovany: [
-            { value: "Corte de cabello", text: "Corte de cabello" },
-            { value: "Barba", text: "Barba" },
-            { value: "Corte y Barba", text: "Corte y Barba" }
-        ],
-        Sharit: [
-            { value: "Corte", text: "Corte" },
-            { value: "Depilaciones", text: "Depilaciones" },
-            { value: "Limpieza facial", text: "Limpieza facial" },
-            { value: "Peinados", text: "Peinados" },
-            { value: "Trenzados", text: "Trenzados" },
-            { value: "Colorimetria Artistica", text: "Colorimetria Artistica" },
-            { value: "Maquillaje", text: "Maquillaje" }
-        ]
-    };
-
     if (barberoInput && serviceInput) {
-        barberoInput.addEventListener('change', function () {
+        barberoInput.addEventListener('change', async function () {
             const barberoSeleccionado = barberoInput.value;
 
-            serviceInput.innerHTML = '<option disabled selected value="">Elige un tipo de servicio</option>';
+            // Limpiar opciones
+            serviceInput.innerHTML = '<option disabled selected value="">Cargando servicios...</option>';
 
-            if (serviciosPorBarbero[barberoSeleccionado]) {
-                serviciosPorBarbero[barberoSeleccionado].forEach(servicio => {
-                    const option = document.createElement('option');
-                    option.value = servicio.value;
-                    option.textContent = servicio.text;
-                    serviceInput.appendChild(option);
-                });
+            if (!barberoSeleccionado) {
+                serviceInput.innerHTML = '<option disabled selected value="">Elige un tipo de servicio</option>';
+                return;
+            }
+
+            try {
+                // Obtener lista de barberos para conseguir el ID
+                const barberosResponse = await fetch('/api/barberos');
+                const barberos = await barberosResponse.json();
+                const barberoData = barberos.find(b => b.nombre === barberoSeleccionado);
+                
+                if (!barberoData) {
+                    throw new Error('Barbero no encontrado');
+                }
+
+                // Obtener servicios desde la base de datos
+                const serviciosResponse = await fetch(`/api/barberos/${barberoData.id}/servicios`);
+                const servicios = await serviciosResponse.json();
+
+                // Limpiar y poblar opciones
+                serviceInput.innerHTML = '<option disabled selected value="">Elige un tipo de servicio</option>';
+
+                if (servicios && servicios.length > 0) {
+                    servicios.forEach(servicio => {
+                        const option = document.createElement('option');
+                        option.value = servicio.value;
+                        option.textContent = servicio.text;
+                        serviceInput.appendChild(option);
+                    });
+                } else {
+                    serviceInput.innerHTML = '<option disabled selected value="">No hay servicios disponibles</option>';
+                }
+
+            } catch (error) {
+                console.error('Error cargando servicios:', error);
+                serviceInput.innerHTML = '<option disabled selected value="">Error cargando servicios</option>';
             }
         });
     }
@@ -357,29 +369,30 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(error => console.error('Error:', error));
     }
 
-function getServiceOptions(barbero, currentService) {
-    const serviciosPorBarbero = {
-        Giovany: [
-            "Corte de cabello",
-            "Barba", 
-            "Corte y Barba"
-        ],
-        Sharit: [
-            "Corte",
-            "Depilaciones",
-            "Limpieza facial",
-            "Peinados",
-            "Trenzados",
-            "Colorimetria Artistica",
-            "Maquillaje"
-        ]
-    };
-
-    const services = serviciosPorBarbero[barbero] || [];
-    return services.map(service => 
-        `<option value="${service}" ${service === currentService ? 'selected' : ''}>${service}</option>`
-    ).join('');
-}
+    async function getServiceOptions(barbero, currentService) {
+        try {
+            // Obtener lista de barberos para conseguir el ID
+            const barberosResponse = await fetch('/api/barberos');
+            const barberos = await barberosResponse.json();
+            const barberoData = barberos.find(b => b.nombre === barbero);
+            
+            if (!barberoData) {
+                return `<option value="${currentService}" selected>${currentService}</option>`;
+            }
+    
+            // Obtener servicios desde la base de datos
+            const serviciosResponse = await fetch(`/api/barberos/${barberoData.id}/servicios`);
+            const servicios = await serviciosResponse.json();
+    
+            return servicios.map(service => 
+                `<option value="${service.value}" ${service.value === currentService ? 'selected' : ''}>${service.text}</option>`
+            ).join('');
+    
+        } catch (error) {
+            console.error('Error cargando servicios:', error);
+            return `<option value="${currentService}" selected>${currentService}</option>`;
+        }
+    }
 
 function convertToAMPM(hour) {
     const [h, m] = hour.split(':');
