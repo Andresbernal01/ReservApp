@@ -1,132 +1,9 @@
-// Funciones globales de formateo
-function formatDate(dateString) {
-    if (!dateString) return 'Fecha no válida';
-    
-    const date = new Date(dateString);
-    if (isNaN(date)) return 'Fecha no válida';
+// Variables globales
+let barberiaConfig = null;
+let barberos = []; // Mover barberos al ámbito global
+let selectedBarbero = null; // Mover selectedBarbero al ámbito global
 
-    date.setDate(date.getDate() + 1);
-    return new Intl.DateTimeFormat('es-ES', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-    }).format(date);
-}
-
-function formatTime(timeString) {
-    const [hour, minute] = timeString.split(':');
-    const date = new Date();
-    date.setHours(hour, minute);
-    return date.toLocaleString('es-ES', {
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const steps = document.querySelectorAll('.booking-step');
-    const progressSteps = document.querySelectorAll('.step');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-    let currentStep = 0;
-
-    // Variables globales para almacenar datos
-    let barberos = [];
-    let selectedBarbero = null;
-
-    function resetTimeSelection() {
-        timeInput.value = '';
-        document.querySelectorAll('#available-hours-list li').forEach(item => {
-            item.classList.remove('selected');
-        });
-        nextBtn.disabled = true;
-    }
-
-    function scrollToTop() {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    }
-
-    // Elementos del DOM
-    const dateInput = document.getElementById('date');
-    const availableHoursList = document.getElementById('available-hours-list');
-    const servicesContainer = document.getElementById('services-container');
-
-    // Inputs ocultos
-    const barberoIdInput = document.createElement('input');
-    barberoIdInput.type = 'hidden';
-    barberoIdInput.id = 'barbero_id';
-    document.body.appendChild(barberoIdInput);
-
-    const serviceInput = document.createElement('input');
-    serviceInput.type = 'hidden';
-    serviceInput.id = 'service';
-    document.body.appendChild(serviceInput);
-
-    const timeInput = document.createElement('input');
-    timeInput.type = 'hidden';
-    timeInput.id = 'time';
-    document.body.appendChild(timeInput);
-
-    // Configurar fechas mínima y máxima
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    dateInput.min = `${year}-${month}-${day}`;
-    
-    const oneMonthLater = new Date(today);
-    oneMonthLater.setMonth(today.getMonth() + 1);
-    const maxYear = oneMonthLater.getFullYear();
-    const maxMonth = String(oneMonthLater.getMonth() + 1).padStart(2, '0');
-    const maxDay = String(oneMonthLater.getDate()).padStart(2, '0');
-    dateInput.max = `${maxYear}-${maxMonth}-${maxDay}`;
-    
-    dateInput.addEventListener('change', () => {
-        const selectedDate = new Date(dateInput.value + 'T00:00:00');
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const oneMonthLater = new Date(today);
-        oneMonthLater.setMonth(today.getMonth() + 1);
-        oneMonthLater.setHours(23, 59, 59, 999);
-    
-        if (selectedDate < today || selectedDate > oneMonthLater) {
-            alert('Selecciona una fecha válida entre hoy y un mes a partir de hoy.');
-            dateInput.value = '';
-        }
-    });
-
-    // Cargar barberos desde la API
-    async function loadBarberos() {
-        try {
-            const response = await fetch('/api/barberos');
-            barberos = await response.json();
-            
-            if (barberos.length === 0) {
-                console.error('No hay barberos disponibles');
-                return;
-            }
-
-            renderBarberos();
-        } catch (error) {
-            console.error('Error cargando barberos:', error);
-            // Fallback con datos por defecto si falla la API
-            barberos = [
-                { id: 1, nombre: 'Giovany', especialidad: 'Especialista en cortes masculinos' },
-                { id: 2, nombre: 'Danitza', especialidad: 'Especialista en tratamientos capilares' }
-            ];
-            renderBarberos();
-        }
-    }
-
-    // Renderizar barberos dinámicamente
-// Renderizar barberos dinámicamente - CORREGIDO
-// Renderizar barberos dinámicamente - VERSIÓN CORREGIDA
+// Función para renderizar barberos (mover al ámbito global)
 function renderBarberos() {
     const professionalsContainer = document.getElementById('professionals-container');
     if (!professionalsContainer) return;
@@ -149,26 +26,84 @@ function renderBarberos() {
             document.querySelectorAll('.professional-card').forEach(c => c.classList.remove('selected'));
             professionalCard.classList.add('selected');
             selectedBarbero = barbero;
-            barberoIdInput.value = barbero.id;
-            nextBtn.disabled = false;
+            document.getElementById('barbero_id').value = barbero.id;
+            document.getElementById('next-btn').disabled = false;
         });
         
         professionalsContainer.appendChild(professionalCard);
     });
 }
 
+// Función para obtener parámetro barbería de la URL
+function getBarberiaParam() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const barberia = urlParams.get('barberia');
+    console.log('Parámetro barbería detectado:', barberia);
+    return barberia;
+}
 
-    function convertToAMPM(hour) {
-        const [h, m] = hour.split(':');
-        const hours = parseInt(h, 10);
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        const newHours = hours % 12 || 12;
-        return `${newHours}:${m} ${ampm}`;
+// FunciÃ³n para agregar parÃ¡metro barberÃ­a a las URLs de API
+function buildApiUrl(endpoint) {
+    const barberia = getBarberiaParam();
+    if (barberia) {
+        const separator = endpoint.includes('?') ? '&' : '?';
+        return `${endpoint}${separator}barberia=${barberia}`;
     }
+    return endpoint;
+}
 
-    // Actualizar horarios disponibles
-// Reemplazar la función updateAvailableTimeSlots en index.js
-// Función updateAvailableTimeSlots modificada en index.js
+// Modificar la funciÃ³n loadBarberiaConfig
+async function loadBarberiaConfig() {
+    try {
+        const url = buildApiUrl('/api/barberia/config');
+        console.log('Llamando a:', url);
+        
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error cargando configuraciÃ³n');
+        
+        barberiaConfig = await response.json();
+        console.log('ConfiguraciÃ³n cargada:', barberiaConfig);
+        
+        // Aplicar tema visual
+        if (barberiaConfig.colores_tema) {
+            applyBarberiaTheme(barberiaConfig.colores_tema);
+        }
+        
+        // Actualizar informaciÃ³n visual
+        updateBarberiaInfo(barberiaConfig);
+        
+    } catch (error) {
+        console.error('Error cargando configuraciÃ³n de barberÃ­a:', error);
+    }
+}
+
+// Modificar la funciÃ³n loadBarberos
+async function loadBarberos() {
+    try {
+        const url = buildApiUrl('/api/barberos');
+        console.log('Llamando a:', url);
+        
+        const response = await fetch(url);
+        barberos = await response.json();
+        
+        if (barberos.length === 0) {
+            console.error('No hay barberos disponibles');
+            return;
+        }
+
+        renderBarberos();
+    } catch (error) {
+        console.error('Error cargando barberos:', error);
+        // Fallback con datos por defecto si falla la API
+        barberos = [
+            { id: 1, nombre: 'Giovany', especialidad: 'Especialista en cortes masculinos' },
+            { id: 2, nombre: 'Danitza', especialidad: 'Especialista en tratamientos capilares' }
+        ];
+        renderBarberos();
+    }
+}
+
+// Modificar la funciÃ³n updateAvailableTimeSlots
 async function updateAvailableTimeSlots() {
     const selectedDate = dateInput.value;
     const selectedBarberoId = barberoIdInput.value;
@@ -180,13 +115,16 @@ async function updateAvailableTimeSlots() {
     availableHoursList.innerHTML = '<li class="loading-indicator">Cargando horas disponibles...</li>';
     try {
         // Obtener el horario por defecto del barbero
-        const defaultScheduleResponse = await fetch(`/api/barberos/${selectedBarberoId}/horario-defecto?fecha=${selectedDate}`);
+        const scheduleUrl = buildApiUrl(`/api/barberos/${selectedBarberoId}/horario-defecto?fecha=${selectedDate}`);
+        console.log('Llamando a horario:', scheduleUrl);
+        
+        const defaultScheduleResponse = await fetch(scheduleUrl);
         
         if (defaultScheduleResponse.ok) {
             const defaultSchedule = await defaultScheduleResponse.json();
             
             if (defaultSchedule.dia_no_laboral) {
-                availableHoursList.innerHTML = '<li>No hay atención este día.</li>';
+                availableHoursList.innerHTML = '<li>No hay atenciÃ³n este dÃ­a.</li>';
                 return;
             }
             
@@ -199,7 +137,10 @@ async function updateAvailableTimeSlots() {
             selectedDaySlots = selectedDaySlots.map(convertToAMPM);
 
             // Obtener citas ya reservadas
-            const response = await fetch(`/api/appointments/filter?date=${selectedDate}&barbero_id=${selectedBarberoId}`);
+            const appointmentsUrl = buildApiUrl(`/api/appointments/filter?date=${selectedDate}&barbero_id=${selectedBarberoId}`);
+            console.log('Llamando a citas:', appointmentsUrl);
+            
+            const response = await fetch(appointmentsUrl);
             const bookedAppointments = await response.json();
             const bookedTimes = bookedAppointments.map(appointment => convertToAMPM(appointment.hora));
 
@@ -290,38 +231,214 @@ async function updateAvailableTimeSlots() {
     }
 }
 
-    // Cargar servicios por barbero
-    async function updateServices() {
-        if (!selectedBarbero) return;
+// Modificar la funciÃ³n updateServices
+async function updateServices() {
+    if (!selectedBarbero) return;
 
-        servicesContainer.innerHTML = '<div class="loading">Cargando servicios...</div>';
+    servicesContainer.innerHTML = '<div class="loading">Cargando servicios...</div>';
+    
+    try {
+        const url = buildApiUrl(`/api/barberos/${selectedBarbero.id}/servicios`);
+        console.log('Llamando a servicios:', url);
         
-        try {
-            const response = await fetch(`/api/barberos/${selectedBarbero.id}/servicios`);
-            const servicios = await response.json();
-            
-            servicesContainer.innerHTML = '';
-            servicios.forEach(service => {
-                const serviceCard = document.createElement('div');
-                serviceCard.classList.add('service-card');
-                serviceCard.dataset.service = service.value;
-                serviceCard.innerHTML = `
-                    <img src="${service.image}" alt="${service.text}">
-                    <h3>${service.text}</h3>
-                `;
-                serviceCard.addEventListener('click', () => {
-                    document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
-                    serviceCard.classList.add('selected');
-                    serviceInput.value = service.value;
-                    nextBtn.disabled = false;
-                });
-                servicesContainer.appendChild(serviceCard);
+        const response = await fetch(url);
+        const servicios = await response.json();
+        
+        servicesContainer.innerHTML = '';
+        servicios.forEach(service => {
+            const serviceCard = document.createElement('div');
+            serviceCard.classList.add('service-card');
+            serviceCard.dataset.service = service.value;
+            serviceCard.innerHTML = `
+                <img src="${service.image}" alt="${service.text}">
+                <h3>${service.text}</h3>
+            `;
+            serviceCard.addEventListener('click', () => {
+                document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
+                serviceCard.classList.add('selected');
+                serviceInput.value = service.value;
+                nextBtn.disabled = false;
             });
-        } catch (error) {
-            console.error('Error cargando servicios:', error);
-            servicesContainer.innerHTML = '<div class="error">Error cargando servicios. Intente nuevamente.</div>';
-        }
+            servicesContainer.appendChild(serviceCard);
+        });
+    } catch (error) {
+        console.error('Error cargando servicios:', error);
+        servicesContainer.innerHTML = '<div class="error">Error cargando servicios. Intente nuevamente.</div>';
     }
+}
+
+// Modificar tambiÃ©n checkExistingAppointmentSameDay
+async function checkExistingAppointmentSameDay(appointment) {
+    try {
+        const url = buildApiUrl(`/api/appointments/filter?date=${appointment.fecha}&barbero_id=${appointment.barbero_id}`);
+        console.log('Verificando citas existentes:', url);
+        
+        const res = await fetch(url);
+        const appointments = await res.json();
+        const sameUserAppointments = appointments.filter(app => app.telefono === appointment.telefono);
+
+        if (sameUserAppointments.length > 0) {
+            return sameUserAppointments[0].hora;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error verificando citas existentes:", error);
+        return null;
+    }
+}
+
+// Modificar la llamada de crear cita tambiÃ©n
+// En renderFinalConfirmationModal, cambiar la llamada fetch a:
+// fetch(buildApiUrl('/api/appointments'), {
+
+function applyBarberiaTheme(colores) {
+    const root = document.documentElement;
+    
+    if (colores.primario) {
+        root.style.setProperty('--primary-purple', colores.primario);
+    }
+    if (colores.secundario) {
+        root.style.setProperty('--secondary-purple', colores.secundario);
+    }
+}
+
+function updateBarberiaInfo(config) {
+    // Actualizar tÃ­tulo de pÃ¡gina
+    document.title = `${config.nombre} - Reserva tu Cita`;
+    
+    // Actualizar logo si existe
+    const logoElements = document.querySelectorAll('.app-header img');
+    logoElements.forEach(logo => {
+        if (config.logo_url) {
+            logo.src = config.logo_url;
+        }
+        logo.alt = `${config.nombre} Logo`;
+    });
+    
+    // Actualizar cualquier texto de nombre de barberÃ­a
+    const nameElements = document.querySelectorAll('.barberia-name');
+    nameElements.forEach(el => el.textContent = config.nombre);
+}
+
+// Funciones globales de formateo
+function formatDate(dateString) {
+    if (!dateString) return 'Fecha no vÃ¡lida';
+    
+    const date = new Date(dateString);
+    if (isNaN(date)) return 'Fecha no vÃ¡lida';
+
+    date.setDate(date.getDate() + 1);
+    return new Intl.DateTimeFormat('es-ES', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    }).format(date);
+}
+
+function formatTime(timeString) {
+    const [hour, minute] = timeString.split(':');
+    const date = new Date();
+    date.setHours(hour, minute);
+    return date.toLocaleString('es-ES', {
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true
+    });
+}
+
+// CAMBIO AQUÃ: Hacer la funciÃ³n async
+document.addEventListener('DOMContentLoaded', async function() {
+    // PRIMERO cargar configuraciÃ³n de barberÃ­a
+    await loadBarberiaConfig();
+
+    const steps = document.querySelectorAll('.booking-step');
+    const progressSteps = document.querySelectorAll('.step');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    let currentStep = 0;
+
+    // Variables globales para almacenar datos
+    let selectedBarbero = null;
+
+    function resetTimeSelection() {
+        timeInput.value = '';
+        document.querySelectorAll('#available-hours-list li').forEach(item => {
+            item.classList.remove('selected');
+        });
+        nextBtn.disabled = true;
+    }
+
+    function scrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+
+    // Elementos del DOM
+    const dateInput = document.getElementById('date');
+    const availableHoursList = document.getElementById('available-hours-list');
+    const servicesContainer = document.getElementById('services-container');
+
+    // Inputs ocultos
+    const barberoIdInput = document.createElement('input');
+    barberoIdInput.type = 'hidden';
+    barberoIdInput.id = 'barbero_id';
+    document.body.appendChild(barberoIdInput);
+
+    const serviceInput = document.createElement('input');
+    serviceInput.type = 'hidden';
+    serviceInput.id = 'service';
+    document.body.appendChild(serviceInput);
+
+    const timeInput = document.createElement('input');
+    timeInput.type = 'hidden';
+    timeInput.id = 'time';
+    document.body.appendChild(timeInput);
+
+    // Configurar fechas mÃ­nima y mÃ¡xima
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    dateInput.min = `${year}-${month}-${day}`;
+    
+    const oneMonthLater = new Date(today);
+    oneMonthLater.setMonth(today.getMonth() + 1);
+    const maxYear = oneMonthLater.getFullYear();
+    const maxMonth = String(oneMonthLater.getMonth() + 1).padStart(2, '0');
+    const maxDay = String(oneMonthLater.getDate()).padStart(2, '0');
+    dateInput.max = `${maxYear}-${maxMonth}-${maxDay}`;
+    
+    dateInput.addEventListener('change', () => {
+        const selectedDate = new Date(dateInput.value + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const oneMonthLater = new Date(today);
+        oneMonthLater.setMonth(today.getMonth() + 1);
+        oneMonthLater.setHours(23, 59, 59, 999);
+    
+        if (selectedDate < today || selectedDate > oneMonthLater) {
+            alert('Selecciona una fecha vÃ¡lida entre hoy y un mes a partir de hoy.');
+            dateInput.value = '';
+        }
+    });
+
+
+
+
+
+    function convertToAMPM(hour) {
+        const [h, m] = hour.split(':');
+        const hours = parseInt(h, 10);
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const newHours = hours % 12 || 12;
+        return `${newHours}:${m} ${ampm}`;
+    }
+
+
 
     // Event listeners
     dateInput.addEventListener('change', () => {
@@ -329,7 +446,7 @@ async function updateAvailableTimeSlots() {
         updateAvailableTimeSlots();
     });
 
-    // Validación de pasos
+    // ValidaciÃ³n de pasos
     function validateStep() {
         switch(currentStep) {
             case 0: // Professional
@@ -351,7 +468,7 @@ async function updateAvailableTimeSlots() {
                 
                 let isValid = true;
 
-                // Validación de nombre
+                // ValidaciÃ³n de nombre
                 if (!name) {
                     nameError.textContent = 'Nombre es requerido';
                     isValid = false;
@@ -362,7 +479,7 @@ async function updateAvailableTimeSlots() {
                     nameError.textContent = '';
                 }
 
-                // Validación de apellido
+                // ValidaciÃ³n de apellido
                 if (!surname) {
                     surnameError.textContent = 'Apellido es requerido';
                     isValid = false;
@@ -373,13 +490,13 @@ async function updateAvailableTimeSlots() {
                     surnameError.textContent = '';
                 }
 
-                // Validación de teléfono
+                // ValidaciÃ³n de telÃ©fono
                 const phoneRegex = /^[3-7][0-9]{9}$/;
                 if (!phone) {
-                    phoneError.textContent = 'Teléfono es requerido';
+                    phoneError.textContent = 'TelÃ©fono es requerido';
                     isValid = false;
                 } else if (!phoneRegex.test(phone)) {
-                    phoneError.textContent = 'Teléfono inválido (10 dígitos, comienza con 3-7)';
+                    phoneError.textContent = 'TelÃ©fono invÃ¡lido (10 dÃ­gitos, comienza con 3-7)';
                     isValid = false;
                 } else {
                     phoneError.textContent = '';
@@ -400,7 +517,7 @@ async function updateAvailableTimeSlots() {
         }
     }
 
-    // Navegación
+    // NavegaciÃ³n
     prevBtn.addEventListener('click', () => {
         if (currentStep > 0) {
             steps[currentStep].classList.remove('active');
@@ -419,7 +536,7 @@ async function updateAvailableTimeSlots() {
         }
     });
 
-    // Event listeners para validación en tiempo real
+    // Event listeners para validaciÃ³n en tiempo real
     document.getElementById('name').addEventListener('input', validateStep);
     document.getElementById('surname').addEventListener('input', validateStep);
     document.getElementById('phone').addEventListener('input', validateStep);
@@ -466,7 +583,7 @@ async function updateAvailableTimeSlots() {
                     <p><strong>Profesional:</strong> <span id="confirm-professional">${selectedBarbero.nombre}</span></p>
                     <p><strong>Servicio:</strong> <span id="confirm-service">${appointment.servicio}</span></p>
                     <p><strong>Nombre:</strong> <span id="confirm-name">${appointment.nombre} ${appointment.apellido}</span></p>
-                    <p><strong>Teléfono:</strong> <span id="confirm-phone">${appointment.telefono}</span></p>
+                    <p><strong>TelÃ©fono:</strong> <span id="confirm-phone">${appointment.telefono}</span></p>
                     <p><strong>Fecha:</strong> <span id="confirm-date">${formatDate(appointment.fecha)}</span></p>
                     <p><strong>Hora:</strong> <span id="confirm-time">${formatTime(appointment.hora)}</span></p>
                 `;
@@ -487,9 +604,9 @@ async function updateAvailableTimeSlots() {
         }
     });
 
-    // Modal de confirmación
+    // Modal de confirmaciÃ³n
     async function showConfirmationModal(appointment) {
-        // Verificar si ya tiene cita el mismo día
+        // Verificar si ya tiene cita el mismo dÃ­a
         const horaExistente = await checkExistingAppointmentSameDay(appointment);
     
         if (horaExistente) {
@@ -503,11 +620,11 @@ async function updateAvailableTimeSlots() {
                             Ya tienes una cita el ${formatDate(appointment.fecha)}
                         </h2>
                         <p style="margin-bottom:1.5rem;">
-                            A las <strong>${formatTime(horaExistente)}</strong>. ¿Quieres agendar otra?
+                            A las <strong>${formatTime(horaExistente)}</strong>. Â¿Quieres agendar otra?
                         </p>
                         <div style="display:flex;gap:1rem;justify-content:center;">
                             <button id="cancel-existing" style="background:#f44336;padding:0.6rem 1.5rem;border:none;border-radius:8px;color:white;cursor:pointer;">No</button>
-                            <button id="continue-existing" style="background:#4caf50;padding:0.6rem 1.5rem;border:none;border-radius:8px;color:white;cursor:pointer;">Sí</button>
+                            <button id="continue-existing" style="background:#4caf50;padding:0.6rem 1.5rem;border:none;border-radius:8px;color:white;cursor:pointer;">SÃ­</button>
                         </div>
                     </div>
                 </div>
@@ -531,35 +648,21 @@ async function updateAvailableTimeSlots() {
         }
     }
     
-    // Función auxiliar para verificar citas existentes el mismo día
-    async function checkExistingAppointmentSameDay(appointment) {
-        try {
-            const res = await fetch(`/api/appointments/filter?date=${appointment.fecha}&barbero_id=${appointment.barbero_id}`);
-            const appointments = await res.json();
-            const sameUserAppointments = appointments.filter(app => app.telefono === appointment.telefono);
+    // FunciÃ³n auxiliar para verificar citas existentes el mismo dÃ­a
 
-            if (sameUserAppointments.length > 0) {
-                return sameUserAppointments[0].hora;
-            }
-            return null;
-        } catch (error) {
-            console.error("Error verificando citas existentes:", error);
-            return null;
-        }
-    }
     
-    // Modal final de confirmación
+    // Modal final de confirmaciÃ³n
     function renderFinalConfirmationModal(appointment) {
         const confirmationHTML = `
             <div id="confirmation-modal">
                 <div>
                     <h2>Confirmar Cita</h2>
-                    <p>¿Estás seguro de que deseas agendar esta cita?</p>
+                    <p>Â¿EstÃ¡s seguro de que deseas agendar esta cita?</p>
                     <div style="text-align: left; margin: 20px 0;">
-                        <p>📅 Fecha: ${formatDate(appointment.fecha)}</p>
-                        <p>⏰ Hora: ${formatTime(appointment.hora)}</p>
-                        <p>👇 Barbero: ${selectedBarbero.nombre}</p>
-                        <p>✂️ Servicio: ${appointment.servicio}</p>
+                        <p>ðŸ“… Fecha: ${formatDate(appointment.fecha)}</p>
+                        <p>â° Hora: ${formatTime(appointment.hora)}</p>
+                        <p>ðŸ’‡ Barbero: ${selectedBarbero.nombre}</p>
+                        <p>âœ‚ï¸ Servicio: ${appointment.servicio}</p>
                     </div>
                     <div>
                         <button id="cancel-booking">Cancelar</button>
@@ -582,15 +685,13 @@ async function updateAvailableTimeSlots() {
         confirmButton.addEventListener('click', () => {
             confirmModal.remove();
 
-            // Lógica de máximo 2 citas en 24 horas
+            // LÃ³gica de mÃ¡ximo 2 citas en 24 horas
             const currentTime = new Date().getTime();
             let previousBookings = JSON.parse(localStorage.getItem('previousBookings') || '[]');
 
             previousBookings = previousBookings.filter(time => {
                 return (currentTime - time) <= (24 * 60 * 60 * 1000);
             });
-
-
 
             previousBookings.push(currentTime);
             localStorage.setItem('previousBookings', JSON.stringify(previousBookings));
@@ -605,12 +706,12 @@ async function updateAvailableTimeSlots() {
                 if (response.ok) {
                     localStorage.setItem('lastBookingTime', currentTime.toString());
                     
-                    // Usar la función global showSuccessModal de Agendar.js
+                    // Usar la funciÃ³n global showSuccessModal de Agendar.js
                     if (typeof showSuccessModal === 'function') {
                         showSuccessModal(appointment);
                     } else {
-                        // Fallback si la función no está disponible
-                        alert('¡Cita agendada exitosamente!');
+                        // Fallback si la funciÃ³n no estÃ¡ disponible
+                        alert('Â¡Cita agendada exitosamente!');
                         window.location.reload();
                     }
                     
@@ -632,7 +733,7 @@ async function updateAvailableTimeSlots() {
         });
     }
 
-    // Función para resetear el flujo de reserva
+    // FunciÃ³n para resetear el flujo de reserva
     function resetBookingFlow() {
         steps[currentStep].classList.remove('active');
         currentStep = 0;
@@ -659,20 +760,15 @@ async function updateAvailableTimeSlots() {
         serviceInput.value = '';
     }
 
-    // Inicialización
-    loadBarberos();
-    updateCheckStatusButtonVisibility();
-    nextBtn.disabled = true;
-
-
+    // Verificar que el contenedor existe
     const professionalsContainer = document.getElementById('professionals-container');
     if (!professionalsContainer) {
-        console.error('No se encontró el contenedor de profesionales');
+        console.error('No se encontrÃ³ el contenedor de profesionales');
         return;
     }
     
-    // Cargar barberos después de que el DOM esté listo
-    loadBarberos();
+    // InicializaciÃ³n
+    await loadBarberos();
     updateCheckStatusButtonVisibility();
     nextBtn.disabled = true;
 });

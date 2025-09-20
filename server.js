@@ -33,7 +33,83 @@ console.log('Iniciando servidor...');
   }
 })();
 
-// Middleware de autenticación
+// NUEVO: Middleware para identificar barbería
+// Reemplaza el middleware identifyBarberia con este debug completo
+const identifyBarberia = async (req, res, next) => {
+  let barberia = null;
+  const host = req.get('host');
+  
+  console.log('=== DEBUG MIDDLEWARE ===');
+  console.log('URL completa:', req.url);
+  console.log('Query completo:', req.query);
+  console.log('Host:', host);
+  console.log('req.query.barberia:', req.query.barberia);
+  
+  try {
+      // Método 1: Por subdomain (zahara.tudominio.com)
+      if (host.includes('.tudominio.com')) {
+          console.log('Método 1: Buscando por subdomain');
+          const slug = host.split('.')[0];
+          const { data } = await supabase
+              .from('barberias')
+              .select('*')
+              .eq('slug', slug)
+              .eq('activa', true)
+              .single();
+          barberia = data;
+          console.log('Resultado método 1:', barberia);
+      }
+      
+      // Método 2: Por parámetro en desarrollo (localhost:3000?barberia=zahara)
+      if (!barberia && req.query.barberia) {
+          console.log('Método 2: Buscando por parámetro:', req.query.barberia);
+          const { data, error } = await supabase
+              .from('barberias')
+              .select('*')
+              .eq('slug', req.query.barberia)
+              .eq('activa', true)
+              .single();
+          
+          console.log('Query result data:', data);
+          console.log('Query result error:', error);
+          barberia = data;
+      }
+      
+      // Fallback a barbería por defecto (primera activa)
+      if (!barberia) {
+          console.log('Método 3: Fallback - Buscando primera barbería activa');
+          const { data, error } = await supabase
+              .from('barberias')
+              .select('*')
+              .eq('activa', true)
+              .limit(1)
+              .single();
+          
+          console.log('Fallback result data:', data);
+          console.log('Fallback result error:', error);
+          barberia = data;
+      }
+      
+      if (!barberia) {
+          console.log('ERROR: No se encontró ninguna barbería');
+          return res.status(404).json({ error: 'Barbería no encontrada' });
+      }
+      
+      console.log('Barbería final seleccionada:', {
+          id: barberia.id,
+          nombre: barberia.nombre,
+          slug: barberia.slug
+      });
+      
+      req.barberia = barberia;
+      next();
+  } catch (error) {
+      console.error('Error identificando barbería:', error);
+      res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+// Middleware de autenticación (sin cambios)
 const verifyAuth = async (req, res, next) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   
@@ -99,7 +175,8 @@ app.post('/api/login', async (req, res) => {
         id: barbero.id, 
         username: barbero.username,
         nombre: barbero.nombre,
-        barbero_id: barbero.id
+        barbero_id: barbero.id,
+        barberia_id: barbero.barberia_id
       },
       JWT_SECRET,
       { expiresIn: '24h' }
@@ -113,7 +190,8 @@ app.post('/api/login', async (req, res) => {
         id: barbero.id,
         username: barbero.username,
         nombre: barbero.nombre,
-        barbero_id: barbero.id
+        barbero_id: barbero.id,
+        barberia_id: barbero.barberia_id
       })
     });
 
@@ -126,17 +204,46 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ====== API DE BARBEROS ======
+// ====== NUEVA RUTA: Configuración de Barbería ======
 
-// Obtener barberos activos (público - para el formulario de reservas)
-// CORRECCIÓN: Removemos imagen_url que no existe en la tabla
-app.get('/api/barberos', async (req, res) => {
+app.get('/api/barberia/config', identifyBarberia, async (req, res) => {
+    try {
+        res.json({
+            id: req.barberia.id,
+            nombre: req.barberia.nombre,
+            slug: req.barberia.slug,
+            logo_url: req.barberia.logo_url,
+            colores_tema: req.barberia.colores_tema
+        });
+    } catch (error) {
+        console.error('Error obteniendo config barbería:', error);
+        res.status(500).json({ error: 'Error del servidor' });
+    }
+});
+
+// ====== API DE BARBEROS (MODIFICADA) ======
+
+// Reemplaza temporalmente el endpoint de barberos para debug
+app.get('/api/barberos', identifyBarberia, async (req, res) => {
   try {
+    console.log('=== DEBUG BARBEROS ===');
+    console.log('Host:', req.get('host'));
+    console.log('Query barberia:', req.query.barberia);
+    console.log('Barberia identificada:', {
+      id: req.barberia.id,
+      nombre: req.barberia.nombre,
+      slug: req.barberia.slug
+    });
+
     const { data, error } = await supabase
       .from('barberos')
-      .select('id, nombre') // Solo campos que existen
+      .select('id, nombre, barberia_id')
+      .eq('barberia_id', req.barberia.id)
       .eq('activo', true)
       .neq('nombre', 'admin');
+
+    console.log('Barberos encontrados:', data);
+    console.log('Error:', error);
 
     if (error) {
       console.error('Error obteniendo barberos:', error);
@@ -150,24 +257,24 @@ app.get('/api/barberos', async (req, res) => {
   }
 });
 
-// Obtener servicios por barbero
-// En server.js, línea 125 aproximadamente
-app.get('/api/barberos/:id/servicios', async (req, res) => {
+// Obtener servicios por barbero (aplicar middleware)
+app.get('/api/barberos/:id/servicios', identifyBarberia, async (req, res) => {
   const { id } = req.params;
   
   try {
-    // Obtener información del barbero
+    // Obtener información del barbero (verificar que pertenece a la barbería)
     const { data: barbero, error: barberoError } = await supabase
       .from('barberos')
       .select('nombre')
       .eq('id', id)
+      .eq('barberia_id', req.barberia.id) // VERIFICAR BARBERÍA
       .single();
 
     if (barberoError || !barbero) {
-      return res.status(404).json({ error: 'Barbero no encontrado' });
+      return res.status(404).json({ error: 'Barbero no encontrado en esta barbería' });
     }
 
-    // Servicios hardcodeados por ahora
+    // Servicios hardcodeados por ahora (podrías hacer esto dinámico después)
     const serviciosPorBarbero = {
       Giovany: [
         { value: "Corte de cabello", text: "Corte de cabello", image: "img/corte.jpg" },
@@ -195,20 +302,21 @@ app.get('/api/barberos/:id/servicios', async (req, res) => {
   }
 });
 
-// ====== API DE CITAS ======
+// ====== API DE CITAS (MODIFICADA) ======
 
-// Crear cita (público - para el formulario de reservas)
-app.post('/api/appointments', async (req, res) => {
+// Crear cita (incluir barbería)
+app.post('/api/appointments', identifyBarberia, async (req, res) => {
   const { nombre, apellido, telefono, fecha, hora, servicio, barbero_id } = req.body;
 
   try {
-    // Verificar si ya existe una cita para esa fecha, hora y barbero
+    // Verificar si ya existe una cita para esa fecha, hora y barbero EN LA MISMA BARBERÍA
     const { data: existingAppointments, error: checkError } = await supabase
       .from('appointments')
       .select('*')
       .eq('fecha', fecha)
       .eq('hora', hora)
-      .eq('barbero_id', barbero_id);
+      .eq('barbero_id', barbero_id)
+      .eq('barberia_id', req.barberia.id); // VERIFICAR EN LA BARBERÍA ACTUAL
 
     if (checkError) {
       console.error('Error verificando citas:', checkError);
@@ -219,10 +327,19 @@ app.post('/api/appointments', async (req, res) => {
       return res.status(400).json({ message: 'Ya existe una cita para esta fecha y hora, intenta otra hora' });
     }
 
-    // Insertar nueva cita
+    // Insertar nueva cita CON barberia_id
     const { data, error } = await supabase
       .from('appointments')
-      .insert([{ nombre, apellido, telefono, fecha, hora, servicio, barbero_id }]);
+      .insert([{ 
+        nombre, 
+        apellido, 
+        telefono, 
+        fecha, 
+        hora, 
+        servicio, 
+        barbero_id,
+        barberia_id: req.barberia.id // INCLUIR BARBERÍA
+      }]);
 
     if (error) {
       console.error('Error creando cita:', error);
@@ -236,10 +353,8 @@ app.post('/api/appointments', async (req, res) => {
   }
 });
 
-// Obtener citas (protegida y filtrada según usuario)
+// Obtener citas (protegida y filtrada por barbería del usuario autenticado)
 app.get('/api/appointments', verifyAuth, async (req, res) => {
-  const { barbero_id } = req.query;
-  
   try {
     let query = supabase
       .from('appointments')
@@ -248,7 +363,9 @@ app.get('/api/appointments', verifyAuth, async (req, res) => {
         barberos!inner(id, nombre)
       `);
     
-    // Todos los barberos solo ven sus propias citas
+    // Filtrar por barbería del usuario autenticado
+    query = query.eq('barberia_id', req.user.barberia_id);
+    // Solo sus propias citas
     query = query.eq('barbero_id', req.user.barbero_id);
     
     const { data, error } = await query.order('fecha', { ascending: true }).order('hora', { ascending: true });
@@ -261,7 +378,7 @@ app.get('/api/appointments', verifyAuth, async (req, res) => {
     // Transformar datos para mantener compatibilidad con el frontend
     const transformedData = data.map(appointment => ({
       ...appointment,
-      barbero: appointment.barberos.nombre // Para compatibilidad con el frontend existente
+      barbero: appointment.barberos.nombre
     }));
     
     res.json(transformedData);
@@ -271,8 +388,8 @@ app.get('/api/appointments', verifyAuth, async (req, res) => {
   }
 });
 
-// Filtrar citas por fecha (público - para mostrar horarios disponibles)
-app.get('/api/appointments/filter', async (req, res) => {
+// Filtrar citas por fecha (público - aplicar middleware de barbería)
+app.get('/api/appointments/filter', identifyBarberia, async (req, res) => {
   const { date, barbero_id, barbero } = req.query;
   
   if (!date) {
@@ -286,17 +403,19 @@ app.get('/api/appointments/filter', async (req, res) => {
         *,
         barberos!inner(id, nombre)
       `)
-      .eq('fecha', date);
+      .eq('fecha', date)
+      .eq('barberia_id', req.barberia.id); // FILTRAR POR BARBERÍA ACTUAL
     
     // Soporte para ambos parámetros (barbero_id y barbero) para compatibilidad
     if (barbero_id) {
       query = query.eq('barbero_id', barbero_id);
     } else if (barbero) {
-      // Buscar por nombre de barbero (para compatibilidad con código existente)
+      // Buscar por nombre de barbero EN LA BARBERÍA ACTUAL
       const { data: barberoData, error: barberoError } = await supabase
         .from('barberos')
         .select('id')
         .eq('nombre', barbero)
+        .eq('barberia_id', req.barberia.id) // VERIFICAR BARBERÍA
         .single();
       
       if (!barberoError && barberoData) {
@@ -324,24 +443,37 @@ app.get('/api/appointments/filter', async (req, res) => {
   }
 });
 
-// Actualizar cita (protegida)
+// Actualizar cita (protegida - verificar barbería)
 app.put('/api/appointments/:id', verifyAuth, async (req, res) => {
   const { id } = req.params;
   const { nombre, apellido, telefono, fecha, hora, servicio, barbero_id } = req.body;
 
   try {
-    // Verificar que el barbero solo pueda editar sus propias citas
-    if (req.user.barbero_id !== barbero_id) {
+    // Verificar que la cita pertenece a la barbería del usuario
+    const { data: existingAppointment, error: fetchError } = await supabase
+      .from('appointments')
+      .select('barbero_id, barberia_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingAppointment) {
+      return res.status(404).json({ error: 'Cita no encontrada' });
+    }
+
+    // Verificar permisos (mismo barbero Y misma barbería)
+    if (req.user.barbero_id !== existingAppointment.barbero_id || 
+        req.user.barberia_id !== existingAppointment.barberia_id) {
       return res.status(403).json({ error: 'No tienes permisos para editar esta cita' });
     }
 
-    // Verificar si existe otra cita en la misma fecha/hora (excluyendo la actual)
-    const { data: existingAppointments, error: checkError } = await supabase
+    // Verificar conflictos en la misma barbería
+    const { data: conflictingAppointments, error: checkError } = await supabase
       .from('appointments')
       .select('*')
       .eq('fecha', fecha)
       .eq('hora', hora)
       .eq('barbero_id', barbero_id)
+      .eq('barberia_id', req.user.barberia_id) // VERIFICAR EN LA MISMA BARBERÍA
       .neq('id', id);
 
     if (checkError) {
@@ -349,7 +481,7 @@ app.put('/api/appointments/:id', verifyAuth, async (req, res) => {
       return res.status(500).json({ error: 'Error en el servidor' });
     }
 
-    if (existingAppointments.length > 0) {
+    if (conflictingAppointments.length > 0) {
       return res.status(400).json({ message: 'Ya existe una cita para esta fecha y hora' });
     }
 
@@ -371,7 +503,7 @@ app.put('/api/appointments/:id', verifyAuth, async (req, res) => {
   }
 });
 
-// Eliminar cita (protegida)
+// Eliminar cita (protegida - verificar barbería)
 app.delete('/api/appointments/:id', verifyAuth, async (req, res) => {
   const { id } = req.params;
 
@@ -379,7 +511,7 @@ app.delete('/api/appointments/:id', verifyAuth, async (req, res) => {
     // Primero obtener la cita para verificar permisos
     const { data: appointment, error: fetchError } = await supabase
       .from('appointments')
-      .select('barbero_id')
+      .select('barbero_id, barberia_id')
       .eq('id', id)
       .single();
 
@@ -387,8 +519,9 @@ app.delete('/api/appointments/:id', verifyAuth, async (req, res) => {
       return res.status(404).json({ error: 'Cita no encontrada' });
     }
 
-    // Verificar que el barbero solo pueda eliminar sus propias citas
-    if (req.user.barbero_id !== appointment.barbero_id) {
+    // Verificar permisos (mismo barbero Y misma barbería)
+    if (req.user.barbero_id !== appointment.barbero_id || 
+        req.user.barberia_id !== appointment.barberia_id) {
       return res.status(403).json({ error: 'No tienes permisos para eliminar esta cita' });
     }
 
@@ -410,25 +543,21 @@ app.delete('/api/appointments/:id', verifyAuth, async (req, res) => {
   }
 });
 
-
-
-
-// Agregar esta ruta en server.js después de la ruta de servicios por barbero
-
-// Obtener horario por defecto de un barbero
-app.get('/api/barberos/:id/horario-defecto', async (req, res) => {
+// Obtener horario por defecto de un barbero (aplicar middleware)
+app.get('/api/barberos/:id/horario-defecto', identifyBarberia, async (req, res) => {
   const { id } = req.params;
-  const { fecha } = req.query; // Opcional: fecha para determinar el día de la semana
+  const { fecha } = req.query;
   
   try {
     const { data: barbero, error } = await supabase
       .from('barberos')
       .select('nombre, horario_defecto')
       .eq('id', id)
+      .eq('barberia_id', req.barberia.id) // VERIFICAR BARBERÍA
       .single();
 
     if (error || !barbero) {
-      return res.status(404).json({ error: 'Barbero no encontrado' });
+      return res.status(404).json({ error: 'Barbero no encontrado en esta barbería' });
     }
 
     // Si no tiene horario_defecto en la BD, retornar error
@@ -469,8 +598,6 @@ app.get('/api/barberos/:id/horario-defecto', async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
-
-
 
 // ====== MANEJO DE ERRORES ======
 
