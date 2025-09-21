@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de Horarios - Zahara Studio</title>
+    <link rel="icon" href="img/Imagotipo Zahara Studio.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 0 1rem;
+        }
+
+        .header h1 {
+            color: #9982BC;
+            font-size: 2rem;
+        }
+
+        .header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #9982BC 0%, #7A6BA8 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(153, 130, 188, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #666 0%, #444 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(28, 28, 28, 0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-section {
+            background: rgba(44, 44, 44, 0.8);
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .form-section h2 {
+            color: #9982BC;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #d3d3d3;
+            font-weight: 500;
+        }
+
+        .form-group input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #555;
+            border-radius: 8px;
+            background: rgba(60, 60, 60, 0.8);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .form-group input[type="date"]:focus {
+            outline: none;
+            border-color: #9982BC;
+            box-shadow: 0 0 10px rgba(153, 130, 188, 0.3);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #9982BC;
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .time-section {
+            background: rgba(60, 60, 60, 0.5);
+            padding: 1.5rem;
+            border-radius: 10px;
+        }
+
+        .time-section h3 {
+            color: #9982BC;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .time-slot {
+            background: rgba(80, 80, 80, 0.8);
+            border: 2px solid #666;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .time-slot:hover {
+            border-color: #9982BC;
+            background: rgba(153, 130, 188, 0.2);
+        }
+
+        .time-slot.selected {
+            background: #9982BC;
+            border-color: #9982BC;
+            color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .horarios-existentes {
+            margin-top: 2rem;
+        }
+
+        .horario-item {
+            background: rgba(60, 60, 60, 0.8);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #9982BC;
+        }
+
+        .horario-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .horario-date {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #9982BC;
+        }
+
+        .horario-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .status-laborable {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4caf50;
+        }
+
+        .status-no-laborable {
+            background: rgba(244, 67, 54, 0.3);
+            color: #f44336;
+        }
+
+        .horario-times {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .loading {
+            text-align: center;
+            color: #9982BC;
+            font-size: 1.1rem;
+            margin: 2rem 0;
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid #f44336;
+            color: #f44336;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .success {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4caf50;
+            color: #4caf50;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .time-slots {
+                grid-template-columns: 1fr;
+            }
+            
+            .horario-header {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Configuración de Horarios</h1>
+        <div class="user-info">
+            <span class="user-name">Cargando...</span>
+            <a href="inicio.html" class="btn btn-secondary">Volver</a>
+            <button onclick="logout()" class="btn btn-danger">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Formulario para crear/editar horario -->
+        <div class="form-section">
+            <h2 id="form-title">Configurar Horario Especial</h2>
+            <div id="message-container"></div>
+            
+            <form id="horario-form">
+                <div class="form-group">
+                    <label for="fecha">Fecha:</label>
+                    <input type="date" id="fecha" required>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="dia-laborable" checked>
+                    <label for="dia-laborable">Día laborable</label>
+                </div>
+
+                <div id="time-slots-container" class="time-slots">
+                    <div class="time-section">
+                        <h3>Horario Mañana</h3>
+                        <div class="time-grid" id="morning-slots"></div>
+                    </div>
+                    
+                    <div class="time-section">
+                        <h3>Horario Tarde</h3>
+                        <div class="time-grid" id="afternoon-slots"></div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-success" id="save-btn">Guardar Horario</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-btn" onclick="cancelEdit()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Lista de horarios existentes -->
+        <div class="form-section">
+            <h2>Horarios Configurados</h2>
+            <div id="horarios-lista" class="horarios-existentes">
+                <div class="loading">Cargando horarios...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/login.js"></script>
+    <script>
+        // Variables globales
+        let currentEditId = null;
+        let selectedMorningSlots = [];
+        let selectedAfternoonSlots = [];
+        
+        // Horarios disponibles
+        const morningHours = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00'];
+        const afternoonHours = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'];
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar autenticación
+            if (!isAuthenticated()) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Mostrar información del usuario
+            const user = getCurrentUser();
+            if (user) {
+                document.querySelector('.user-name').textContent = user.nombre || user.username;
+            }
+
+            // Configurar fecha mínima (hoy)
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('fecha').min = today;
+
+            // Generar slots de tiempo
+            generateTimeSlots();
+            
+            // Cargar horarios existentes
+            loadHorarios();
+
+            // Event listeners
+            document.getElementById('dia-laborable').addEventListener('change', toggleTimeSlots);
+            document.getElementById('horario-form').addEventListener('submit', saveHorario);
+        });
+
+        // Generar slots de tiempo
+        function generateTimeSlots() {
+            const morningContainer = document.getElementById('morning-slots');
+            const afternoonContainer = document.getElementById('afternoon-slots');
+
+            // Limpiar contenedores
+            morningContainer.innerHTML = '';
+            afternoonContainer.innerHTML = '';
+
+            // Generar slots de mañana
+            morningHours.forEach(hour => {
+                const slot = createTimeSlot(hour, 'morning');
+                morningContainer.appendChild(slot);
+            });
+
+            // Generar slots de tarde
+            afternoonHours.forEach(hour => {
+                const slot = createTimeSlot(hour, 'afternoon');
+                afternoonContainer.appendChild(slot);
+            });
+        }
+
+        // Crear elemento de slot de tiempo
+        function createTimeSlot(time, period) {
+            const slot = document.createElement('div');
+            slot.className = 'time-slot';
+            slot.textContent = convertToAMPM(time);
+            slot.dataset.time = time;
+            slot.dataset.period = period;
+            
+            slot.addEventListener('click', function() {
+                toggleTimeSlot(this, time, period);
+            });
+            
+            return slot;
+        }
+
+        // Toggle selección de slot
+        function toggleTimeSlot(element, time, period) {
+            element.classList.toggle('selected');
+            
+            if (period === 'morning') {
+                const index = selectedMorningSlots.indexOf(time);
+                if (index > -1) {
+                    selectedMorningSlots.splice(index, 1);
+                } else {
+                    selectedMorningSlots.push(time);
+                }
+                selectedMorningSlots.sort();
+            } else {
+                const index = selectedAfternoonSlots.indexOf(time);
+                if (index > -1) {
+                    selectedAfternoonSlots.splice(index, 1);
+                } else {
+                    selectedAfternoonSlots.push(time);
+                }
+                selectedAfternoonSlots.sort();
+            }
+        }
+
+        // Toggle visibilidad de slots de tiempo
+        function toggleTimeSlots() {
+            const isLaborable = document.getElementById('dia-laborable').checked;
+            const container = document.getElementById('time-slots-container');
+            
+            if (isLaborable) {
+                container.style.display = 'grid';
+            } else {
+                container.style.display = 'none';
+                // Limpiar selecciones
+                selectedMorningSlots = [];
+                selectedAfternoonSlots = [];
+                document.querySelectorAll('.time-slot').forEach(slot => {
+                    slot.classList.remove('selected');
+                });
+            }
+        }
+
+        // Convertir hora a formato AM/PM
+        function convertToAMPM(hour) {
+            const [h, m] = hour.split(':');
+            const hours = parseInt(h, 10);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const newHours = hours % 12 || 12;
+            return `${newHours}:${m} ${ampm}`;
+        }
+
+        // Guardar horario
+        async function saveHorario(event) {
+            event.preventDefault();
+            
+            const fecha = document.getElementById('fecha').value;
+            const diaLaborable = document.getElementById('dia-laborable').checked;
+            
+            if (!fecha) {
+                showMessage('Por favor selecciona una fecha', 'error');
+                return;
+            }
+
+            const horarioData = {
+                fecha: fecha,
+                dia_laborable: diaLaborable,
+                horario_manana: diaLaborable ? selectedMorningSlots : [],
+                horario_tarde: diaLaborable ? selectedAfternoonSlots : []
+            };
+
+            try {
+                const url = currentEditId ? `/api/horarios/${currentEditId}` : '/api/horarios';
+                const method = currentEditId ? 'PUT' : 'POST';
+                
+                const response = await authenticatedFetch(url, {
+                    method: method,
+                    body: JSON.stringify(horarioData)
+                });
+
+                if (response && response.ok) {
+                    const message = currentEditId ? 'Horario actualizado correctamente' : 'Horario guardado correctamente';
+                    showMessage(message, 'success');
+                    resetForm();
+                    loadHorarios();
+                } else {
+                    const data = await response.json();
+                    showMessage(data.error || 'Error al guardar el horario', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error de conexión', 'error');
+            }
+        }
+
+        // Cargar horarios existentes
+        async function loadHorarios() {
+            const container = document.getElementById('horarios-lista');
+            container.innerHTML = '<div class="loading">Cargando horarios...</div>';
+
+            try {
+                const response = await authenticatedFetch('/api/horarios');
+                
+                if (response && response.ok) {
+                    const horarios = await response.json();
+                    renderHorarios(horarios);
+                } else {
+                    container.innerHTML = '<div class="error">Error al cargar los horarios</div>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<div class="error">Error de conexión</div>';
+            }
+        }
+
+        // Renderizar horarios
+        function renderHorarios(horarios) {
+            const container = document.getElementById('horarios-lista');
+            
+            if (horarios.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #888;">No hay horarios configurados</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            
+            horarios.forEach(horario => {
+                const horarioElement = document.createElement('div');
+                horarioElement.className = 'horario-item';
+                
+                const fechaFormateada = new Date(horario.fecha + 'T00:00:00').toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                horarioElement.innerHTML = `
+                    <div class="horario-header">
+                        <div class="horario-date">${fechaFormateada}</div>
+                        <div class="horario-status ${horario.dia_laborable ? 'status-laborable' : 'status-no-laborable'}">
+                            ${horario.dia_laborable ? 'Día Laborable' : 'Día No Laborable'}
+                        </div>
+                    </div>
+                    
+                    ${horario.dia_laborable ? `
+                        <div class="horario-times">
+                            <div>
+                                <strong>Mañana:</strong><br>
+                                ${horario.horario_manana?.length > 0 ? 
+                                    horario.horario_manana.map(h => convertToAMPM(h)).join(', ') : 
+                                    'Sin horario'
+                                }
+                            </div>
+                            <div>
+                                <strong>Tarde:</strong><br>
+                                ${horario.horario_tarde?.length > 0 ? 
+                                    horario.horario_tarde.map(h => convertToAMPM(h)).join(', ') : 
+                                    'Sin horario'
+                                }
+                            </div>
+                        </div>
+                    ` : '<p style="color: #888; margin-top: 0.5rem;">Día sin atención</p>'}
+                    
+                    <div class="action-buttons" style="margin-top: 1rem;">
+                        <button class="btn" onclick="editHorario(${horario.id}, '${horario.fecha}', ${horario.dia_laborable}, '${JSON.stringify(horario.horario_manana || [])}', '${JSON.stringify(horario.horario_tarde || [])}')">
+                            Editar
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteHorario(${horario.id})">
+                            Eliminar
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(horarioElement);
+            });
+        }
+
+        // Editar horario
+        function editHorario(id, fecha, diaLaborable, manana, tarde) {
+            currentEditId = id;
+            
+            // Llenar formulario
+            document.getElementById('fecha').value = fecha;
+            document.getElementById('dia-laborable').checked = diaLaborable;
+            
+            // Parsear horarios
+            selectedMorningSlots = JSON.parse(manana.replace(/'/g, '"'));
+            selectedAfternoonSlots = JSON.parse(tarde.replace(/'/g, '"'));
+            
+            // Actualizar UI
+            document.getElementById('form-title').textContent = 'Editar Horario Especial';
+            document.getElementById('save-btn').textContent = 'Actualizar Horario';
+            
+            // Mostrar/ocultar slots según sea laborable
+            toggleTimeSlots();
+            
+            // Marcar slots seleccionados
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                const time = slot.dataset.time;
+                const period = slot.dataset.period;
+                
+                if ((period === 'morning' && selectedMorningSlots.includes(time)) ||
+                    (period === 'afternoon' && selectedAfternoonSlots.includes(time))) {
+                    slot.classList.add('selected');
+                } else {
+                    slot.classList.remove('selected');
+                }
+            });
+
+            // Scroll al formulario
+            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Cancelar edición
+        function cancelEdit() {
+            resetForm();
+        }
+
+        // Resetear formulario
+        function resetForm() {
+            currentEditId = null;
+            selectedMorningSlots = [];
+            selectedAfternoonSlots = [];
+            
+            document.getElementById('horario-form').reset();
+            document.getElementById('form-title').textContent = 'Configurar Horario Especial';
+            document.getElementById('save-btn').textContent = 'Guardar Horario';
+            
+            // Limpiar selecciones
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                slot.classList.remove('selected');
+            });
+            
+            // Mostrar slots por defecto
+            document.getElementById('dia-laborable').checked = true;
+            toggleTimeSlots();
+            
+            // Limpiar mensajes
+            document.getElementById('message-container').innerHTML = '';
+        }
+
+        // Eliminar horario
+        async function deleteHorario(id) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este horario?')) {
+                return;
+            }
+
+            try {
+                const response = await authenticatedFetch(`/api/horarios/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response && response.ok) {
+                    showMessage('Horario eliminado correctamente', 'success');
+                    loadHorarios();
+                } else {
+                    showMessage('Error al eliminar el horario', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error de conexión', 'error');
+            }
+        }
+
+        // Mostrar mensaje
+        function showMessage(message, type) {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `<div class="${type}">${message}</div>`;
+            
+            // Auto-ocultar después de 5 segundos
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

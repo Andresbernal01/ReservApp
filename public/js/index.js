@@ -137,6 +137,9 @@ async function loadBarberos() {
 }
 
 // Modificar la funciÃ³n updateAvailableTimeSlots
+// REEMPLAZAR la función updateAvailableTimeSlots en index.js con esta versión:
+
+// Función updateAvailableTimeSlots modificada para soportar horarios especiales
 async function updateAvailableTimeSlots() {
     const selectedDate = dateInput.value;
     const selectedBarberoId = barberoIdInput.value;
@@ -146,73 +149,100 @@ async function updateAvailableTimeSlots() {
     if (!selectedDate || !selectedBarberoId) return;
 
     availableHoursList.innerHTML = '<li class="loading-indicator">Cargando horas disponibles...</li>';
+    
     try {
-        // Obtener el horario por defecto del barbero
-        const scheduleUrl = buildApiUrl(`/api/barberos/${selectedBarberoId}/horario-defecto?fecha=${selectedDate}`);
-        console.log('Llamando a horario:', scheduleUrl);
+        // PASO 1: Verificar si hay horario especial para esta fecha
+        const horarioEspecialUrl = buildApiUrl(`/api/horarios/fecha/${selectedDate}?barbero_id=${selectedBarberoId}`);
+        console.log('Verificando horario especial:', horarioEspecialUrl);
         
-        const defaultScheduleResponse = await fetch(scheduleUrl);
+        const horarioEspecialResponse = await fetch(horarioEspecialUrl);
         
-        if (defaultScheduleResponse.ok) {
-            const defaultSchedule = await defaultScheduleResponse.json();
+        let selectedDaySlots = [];
+        
+        if (horarioEspecialResponse.ok) {
+            const horarioData = await horarioEspecialResponse.json();
+            console.log('Respuesta horario especial:', horarioData);
             
-            if (defaultSchedule.dia_no_laboral) {
-                availableHoursList.innerHTML = '<li>No hay atenciÃ³n este dÃ­a.</li>';
-                return;
-            }
-            
-            let selectedDaySlots = [
-                ...(defaultSchedule.horario_manana || []),
-                ...(defaultSchedule.horario_tarde || [])
-            ];
-
-            // Convertir a formato AM/PM para mostrar
-            selectedDaySlots = selectedDaySlots.map(convertToAMPM);
-
-            // Obtener citas ya reservadas
-            const appointmentsUrl = buildApiUrl(`/api/appointments/filter?date=${selectedDate}&barbero_id=${selectedBarberoId}`);
-            console.log('Llamando a citas:', appointmentsUrl);
-            
-            const response = await fetch(appointmentsUrl);
-            const bookedAppointments = await response.json();
-            const bookedTimes = bookedAppointments.map(appointment => convertToAMPM(appointment.hora));
-
-            const remainingSlots = selectedDaySlots.filter(slot => !bookedTimes.includes(slot));
-
-            availableHoursList.innerHTML = '';
-            
-            if (remainingSlots.length === 0) {
-                availableHoursList.innerHTML = '<li>No hay horarios disponibles para esta fecha.</li>';
+            if (horarioData.tipo === 'especial') {
+                // Usar horario especial
+                if (horarioData.dia_no_laboral) {
+                    availableHoursList.innerHTML = '<li>No hay atención este día (horario especial configurado).</li>';
+                    return;
+                }
+                
+                // Combinar horarios de mañana y tarde del horario especial
+                selectedDaySlots = [
+                    ...(horarioData.horario_manana || []),
+                    ...(horarioData.horario_tarde || [])
+                ];
+                
+                console.log('Usando horario especial:', selectedDaySlots);
             } else {
-                remainingSlots.forEach(slot => {
-                    const listItem = document.createElement('li');
-                    listItem.textContent = slot;
-                    listItem.addEventListener('click', () => {
-                        const [time, period] = slot.split(' ');
-                        let [hours, minutes] = time.split(':');
-                        hours = parseInt(hours);
-                        
-                        if (period === 'PM' && hours !== 12) hours += 12;
-                        if (period === 'AM' && hours === 12) hours = 0;
-                        
-                        const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes}`;
-                        timeInput.value = formattedTime;
-                        
-                        document.querySelectorAll('#available-hours-list li').forEach(item => 
-                            item.classList.remove('selected'));
-                        listItem.classList.add('selected');
-                        nextBtn.disabled = false;
-                    });
-                    availableHoursList.appendChild(listItem);
-                });
+                // Usar horario por defecto - llamar a la API existente
+                console.log('No hay horario especial, usando horario por defecto');
+                const scheduleUrl = buildApiUrl(`/api/barberos/${selectedBarberoId}/horario-defecto?fecha=${selectedDate}`);
+                const defaultScheduleResponse = await fetch(scheduleUrl);
+                
+                if (defaultScheduleResponse.ok) {
+                    const defaultSchedule = await defaultScheduleResponse.json();
+                    
+                    if (defaultSchedule.dia_no_laboral) {
+                        availableHoursList.innerHTML = '<li>No hay atención este día.</li>';
+                        return;
+                    }
+                    
+                    selectedDaySlots = [
+                        ...(defaultSchedule.horario_manana || []),
+                        ...(defaultSchedule.horario_tarde || [])
+                    ];
+                } else {
+                    throw new Error('No se pudo obtener horario por defecto');
+                }
             }
         } else {
-            // Fallback si no se puede obtener el horario
-            console.error('Error obteniendo horario por defecto, usando fallback');
-            const fallbackSlots = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'].map(convertToAMPM);
+            // Si falla la consulta de horario especial, usar horario por defecto como fallback
+            console.log('Error consultando horario especial, usando horario por defecto como fallback');
+            const scheduleUrl = buildApiUrl(`/api/barberos/${selectedBarberoId}/horario-defecto?fecha=${selectedDate}`);
+            const defaultScheduleResponse = await fetch(scheduleUrl);
             
-            availableHoursList.innerHTML = '';
-            fallbackSlots.forEach(slot => {
+            if (defaultScheduleResponse.ok) {
+                const defaultSchedule = await defaultScheduleResponse.json();
+                
+                if (defaultSchedule.dia_no_laboral) {
+                    availableHoursList.innerHTML = '<li>No hay atención este día.</li>';
+                    return;
+                }
+                
+                selectedDaySlots = [
+                    ...(defaultSchedule.horario_manana || []),
+                    ...(defaultSchedule.horario_tarde || [])
+                ];
+            } else {
+                throw new Error('No se pudo obtener ningún horario');
+            }
+        }
+
+        // PASO 2: Convertir a formato AM/PM para mostrar
+        selectedDaySlots = selectedDaySlots.map(convertToAMPM);
+
+        // PASO 3: Obtener citas ya reservadas
+        const appointmentsUrl = buildApiUrl(`/api/appointments/filter?date=${selectedDate}&barbero_id=${selectedBarberoId}`);
+        console.log('Consultando citas reservadas:', appointmentsUrl);
+        
+        const response = await fetch(appointmentsUrl);
+        const bookedAppointments = await response.json();
+        const bookedTimes = bookedAppointments.map(appointment => convertToAMPM(appointment.hora));
+
+        // PASO 4: Filtrar horarios disponibles
+        const remainingSlots = selectedDaySlots.filter(slot => !bookedTimes.includes(slot));
+
+        // PASO 5: Renderizar slots disponibles
+        availableHoursList.innerHTML = '';
+        
+        if (remainingSlots.length === 0) {
+            availableHoursList.innerHTML = '<li>No hay horarios disponibles para esta fecha.</li>';
+        } else {
+            remainingSlots.forEach(slot => {
                 const listItem = document.createElement('li');
                 listItem.textContent = slot;
                 listItem.addEventListener('click', () => {
@@ -234,9 +264,10 @@ async function updateAvailableTimeSlots() {
                 availableHoursList.appendChild(listItem);
             });
         }
+        
     } catch (error) {
-        console.error('Error:', error);
-        // Fallback en caso de error completo
+        console.error('Error completo:', error);
+        // Fallback completo en caso de error
         const fallbackSlots = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'].map(convertToAMPM);
         
         availableHoursList.innerHTML = '';

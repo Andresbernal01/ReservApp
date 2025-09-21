@@ -629,6 +629,255 @@ app.post('/api/barberos/:id/servicios', verifyAuth, async (req, res) => {
   }
 });
 
+
+
+
+// AGREGAR ESTAS RUTAS AL FINAL DE TU server.js, ANTES DE "// ====== MANEJO DE ERRORES ======"
+
+// ====== API DE HORARIOS ESPECIALES ======
+
+// Crear horario especial
+app.post('/api/horarios', verifyAuth, async (req, res) => {
+  const { fecha, dia_laborable, horario_manana, horario_tarde } = req.body;
+  const barbero_id = req.user.barbero_id;
+  const barberia_id = req.user.barberia_id;
+
+  if (!fecha) {
+    return res.status(400).json({ error: 'La fecha es requerida' });
+  }
+
+  try {
+    // Verificar si ya existe un horario para esta fecha y barbero
+    const { data: existingHorario, error: checkError } = await supabase
+      .from('horarios')
+      .select('*')
+      .eq('fecha', fecha)
+      .eq('barbero_id', barbero_id)
+      .eq('barberia_id', barberia_id)
+      .single();
+
+    if (existingHorario) {
+      return res.status(400).json({ error: 'Ya existe un horario configurado para esta fecha' });
+    }
+
+    // Crear nuevo horario
+    const { data, error } = await supabase
+      .from('horarios')
+      .insert([{
+        fecha,
+        dia_laborable,
+        horario_manana: horario_manana || [],
+        horario_tarde: horario_tarde || [],
+        barbero_id,
+        barberia_id
+      }])
+      .select();
+
+    if (error) {
+      console.error('Error creando horario:', error);
+      return res.status(500).json({ error: 'Error al crear el horario' });
+    }
+
+    res.status(201).json({ 
+      message: 'Horario creado correctamente',
+      data: data[0]
+    });
+
+  } catch (error) {
+    console.error('Error en POST horarios:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Obtener horarios del barbero autenticado
+app.get('/api/horarios', verifyAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('horarios')
+      .select('*')
+      .eq('barbero_id', req.user.barbero_id)
+      .eq('barberia_id', req.user.barberia_id)
+      .order('fecha', { ascending: true });
+
+    if (error) {
+      console.error('Error obteniendo horarios:', error);
+      return res.status(500).json({ error: 'Error al obtener los horarios' });
+    }
+
+    res.json(data);
+
+  } catch (error) {
+    console.error('Error en GET horarios:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Obtener horario específico por fecha (para el frontend público)
+app.get('/api/horarios/fecha/:fecha', identifyBarberia, async (req, res) => {
+  const { fecha } = req.params;
+  const { barbero_id } = req.query;
+
+  if (!barbero_id) {
+    return res.status(400).json({ error: 'barbero_id es requerido' });
+  }
+
+  try {
+    // Verificar que el barbero pertenece a la barbería
+    const { data: barbero, error: barberoError } = await supabase
+      .from('barberos')
+      .select('id')
+      .eq('id', barbero_id)
+      .eq('barberia_id', req.barberia.id)
+      .single();
+
+    if (barberoError || !barbero) {
+      return res.status(404).json({ error: 'Barbero no encontrado en esta barbería' });
+    }
+
+    // Buscar horario especial para esta fecha
+    const { data: horarioEspecial, error } = await supabase
+      .from('horarios')
+      .select('*')
+      .eq('fecha', fecha)
+      .eq('barbero_id', barbero_id)
+      .eq('barberia_id', req.barberia.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('Error obteniendo horario especial:', error);
+      return res.status(500).json({ error: 'Error al obtener el horario' });
+    }
+
+    if (horarioEspecial) {
+      // Retornar horario especial
+      return res.json({
+        tipo: 'especial',
+        dia_no_laboral: !horarioEspecial.dia_laborable,
+        horario_manana: horarioEspecial.horario_manana || [],
+        horario_tarde: horarioEspecial.horario_tarde || []
+      });
+    } else {
+      // No hay horario especial, usar horario por defecto
+      return res.json({
+        tipo: 'defecto',
+        usar_horario_defecto: true
+      });
+    }
+
+  } catch (error) {
+    console.error('Error en GET horario por fecha:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Actualizar horario especial
+app.put('/api/horarios/:id', verifyAuth, async (req, res) => {
+  const { id } = req.params;
+  const { fecha, dia_laborable, horario_manana, horario_tarde } = req.body;
+
+  try {
+    // Verificar que el horario pertenece al barbero autenticado
+    const { data: existingHorario, error: fetchError } = await supabase
+      .from('horarios')
+      .select('barbero_id, barberia_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingHorario) {
+      return res.status(404).json({ error: 'Horario no encontrado' });
+    }
+
+    // Verificar permisos
+    if (req.user.barbero_id !== existingHorario.barbero_id || 
+        req.user.barberia_id !== existingHorario.barberia_id) {
+      return res.status(403).json({ error: 'No tienes permisos para editar este horario' });
+    }
+
+    // Verificar si hay conflicto con otra fecha (si se cambió la fecha)
+    if (fecha) {
+      const { data: conflictHorario, error: conflictError } = await supabase
+        .from('horarios')
+        .select('id')
+        .eq('fecha', fecha)
+        .eq('barbero_id', req.user.barbero_id)
+        .eq('barberia_id', req.user.barberia_id)
+        .neq('id', id)
+        .single();
+
+      if (conflictHorario) {
+        return res.status(400).json({ error: 'Ya existe un horario para esta fecha' });
+      }
+    }
+
+    // Actualizar horario
+    const { data, error } = await supabase
+      .from('horarios')
+      .update({ 
+        fecha, 
+        dia_laborable, 
+        horario_manana: horario_manana || [], 
+        horario_tarde: horario_tarde || [] 
+      })
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      console.error('Error actualizando horario:', error);
+      return res.status(500).json({ error: 'Error al actualizar el horario' });
+    }
+
+    res.json({ 
+      message: 'Horario actualizado correctamente',
+      data: data[0]
+    });
+
+  } catch (error) {
+    console.error('Error en PUT horarios:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Eliminar horario especial
+app.delete('/api/horarios/:id', verifyAuth, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Verificar que el horario pertenece al barbero autenticado
+    const { data: existingHorario, error: fetchError } = await supabase
+      .from('horarios')
+      .select('barbero_id, barberia_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingHorario) {
+      return res.status(404).json({ error: 'Horario no encontrado' });
+    }
+
+    // Verificar permisos
+    if (req.user.barbero_id !== existingHorario.barbero_id || 
+        req.user.barberia_id !== existingHorario.barberia_id) {
+      return res.status(403).json({ error: 'No tienes permisos para eliminar este horario' });
+    }
+
+    // Eliminar horario
+    const { error } = await supabase
+      .from('horarios')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error eliminando horario:', error);
+      return res.status(500).json({ error: 'Error al eliminar el horario' });
+    }
+
+    res.json({ message: 'Horario eliminado correctamente' });
+
+  } catch (error) {
+    console.error('Error en DELETE horarios:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // ====== MANEJO DE ERRORES ======
 
 app.use('*', (req, res) => {
